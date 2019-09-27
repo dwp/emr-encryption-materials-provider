@@ -1,0 +1,20 @@
+HELP.md
+.gradle
+/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Terraform
+ci/terraform.tf
+*.tfvars
+rad/
+out/
+.idea/*
+
+#Logs
+dks.log.directory_IS_UNDEFINED
+dks.log.*
+*.jks
+*.pem
+*.crt
+*.p12
+.idea
