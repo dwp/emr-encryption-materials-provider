@@ -67,8 +67,8 @@ This component implements the ```EncryptionMaterialsProvider``` interface
 
 ## Methods
 * EncryptionMaterials getEncryptionMaterials(Map<String, String> materialsDescription)
-** The materialsDescription may contain a ```mode``` parameter:
-*** ```<null|blank>``` - indicates that the component is being invoked to provide encryption materials for data about to be written out
-*** ```"double"``` - indicates that the component is being invoked to decrypt data that has previously been protected using an earlier (now deprecated) encryption mechanism. Code to support this method is currently preserved to support demo data that still relies on this method of protection (ie any files with metadata ```x-amz-meta-x-amz-matdesc``` containing a ```mode``` of ```"double"```)
-*** ```"doubleReuse"``` - indicates that the component is being invoked to decrypt data that has previously been protected using the target encryption mechanism (ie any files with metadata ```x-amz-meta-x-amz-matdesc``` containing a ```mode``` of ```"doubleReuse"```)
+  * The materialsDescription may contain a ```mode``` parameter:
+    * ```<null|blank>``` - indicates that the component is being invoked to provide encryption materials for data about to be written out
+    * ```"double"``` - indicates that the component is being invoked to decrypt data that has previously been protected using an earlier (now deprecated) encryption mechanism. Code to support this method is currently preserved to support demo data that still relies on this method of protection (ie any files with metadata ```x-amz-meta-x-amz-matdesc``` containing a ```mode``` of ```"double"```)
+    * ```"doubleReuse"``` - indicates that the component is being invoked to decrypt data that has previously been protected using the target encryption mechanism (ie any files with metadata ```x-amz-meta-x-amz-matdesc``` containing a ```mode``` of ```"doubleReuse"```)
   
