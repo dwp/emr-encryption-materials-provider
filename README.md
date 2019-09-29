@@ -161,3 +161,6 @@ A suggested approach to achieving this is:
     * ```x-amz-meta-x-amz-matdesc``` - the description of theencryption materials used to encrypt the symmetric key:
       * ```keyid``` - the key of the subsidiary keypair
       * ```mode``` - "doubleReuse"
+
+
+Note: this suggestion is for preparing encrypted test data only - not a method for production use!
