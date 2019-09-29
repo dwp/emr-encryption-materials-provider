@@ -65,10 +65,68 @@ Gradle will fetch required packages and action all of the building. You can star
 
 This component implements the ```EncryptionMaterialsProvider``` interface
 
-## Methods
-* EncryptionMaterials getEncryptionMaterials(Map<String, String> materialsDescription)
+## Key Java Methods
+* ```getEncryptionMaterials(Map<String, String> materialsDescription)```
   * The materialsDescription may contain a ```mode``` parameter:
-    * ```<null|blank>``` - indicates that the component is being invoked to provide encryption materials for data about to be written out
+    * ```<null|blank>``` - indicates that the component is being invoked to provide encryption materials for data about to be written out. (Note: the encryption materials will conform to the ```doubleReuse``` approach - see below)
     * ```"double"``` - indicates that the component is being invoked to decrypt data that has previously been protected using an earlier (now deprecated) encryption mechanism. Code to support this method is currently preserved to support demo data that still relies on this method of protection (ie any files with metadata ```x-amz-meta-x-amz-matdesc``` containing a ```mode``` of ```"double"```)
     * ```"doubleReuse"``` - indicates that the component is being invoked to decrypt data that has previously been protected using the target encryption mechanism (ie any files with metadata ```x-amz-meta-x-amz-matdesc``` containing a ```mode``` of ```"doubleReuse"```)
-  
+* ```setConf(Configuration conf)```
+  * This method is called when the EMR cluster is first instantiated, and in turn instatiates the DWEncryptionsMaterialsProvider object itself. The various configuration parameters (described in the 'Infrastructure' section above) are passed into the DWEncryptionsMaterialsProvider object, and the init() method is then called.
+* ```init()```
+  * This method establishes key resources required by the DWEncryptionsMaterialsProvider object, such as:
+    * Base64 encoder/decoder
+    * JSON parser (via Gson libraries)
+  * It also checks that the requisite configuration parameters have been received, and
+  * Initialises a cache to hold subsidiary encryption/decryption keypairs (used in the ```doubleReuse``` approach) for up to 24 hours
+    * This cache holds any subsidiary keypairs created or re-read back from the S3 bucket pointed to by the ```fs.s3.cse.encr.keypairs.bucket``` configuration parameter
+    * This reduces the need to retrieve and decrypt (via DKS) any keypairs that have already been used in the past 24 hours (either to encrypt data being written out from EMR to S3, or decrypt data being read into EMR from S3)
+  * Note: this method also reads in from S3 both the public and private halves of a 'master' keypair that is currently being used as a dummy/proxy for the encryption/decryption which will eventually be done by the HSM (via DKS). Once DKS is integrated into the DWEncryptionsMaterialsProvider, this code (and the related configuration parameters - ```fs.s3.cse.rsa.private``` and ```fs.s3.cse.rsa.public``` - and S3 bucket locations) will no longer be required
+* ```determineDoubleEncryptionMaterials(Map<String, String> materialsDescription)``` [deprecated]
+  * This method provides encryption materials to decrypt data that has previously been protected using an earlier (now deprecated) encryption mechanism. This code is currently preserved to support demo data that still relies on this method of protection (ie any files with metadata ```x-amz-meta-x-amz-matdesc``` containing a ```mode``` of ```"double"```). Once all data has been moved acorss to the ```doubleReuse``` method of protection, this code can be removed.
+  * The (deprecated) ```double``` protection method for encrypting data:
+    * This is similar to the ```doubleReuse``` protection method (see below), but generates, encrypts and stores (as metadata) a subsidiary keypair **for each file** being stored. Furthermre, the encryption relies on a symmetric key - also one **for each file**, and the result is encrypted using DKS. This is regarded as inefficient and over-engineered. The logic for decryption is as follows:
+      * retrieve Base64-encoded subsidiary keypair from materialsDescription (```eem``` parameter)
+      * retrieve Base64-encoded DKS-encrypted symmetric key from materialsDescription (```eemkey``` parameter)
+      * retrieve Base64-encoded symmetric key's IV from materialsDescription (```eemkeyiv``` parameter)
+      * decrypt symmetric key using DKS
+      * extract subsidiary keypair from Base64-encoded string
+      * extract EEMKeyIV from Base64-encoded string
+      * use the now decrypted symmetric key (along with its IV) to decrypt the subsidiary keypair
+      * generate an EncryptionMaterials object containing the private key from the now decrypted subsidiary keypair
+      * return the generated EncryptionMaterials object
+* ```determineDoubleReuseEncryptionMaterials(Map<String, String> materialsDescription)```
+  * The ```doubleReuse``` protection method for decrypting data:
+    * This improves on the (deprecated) ```double``` protection method by re-using a subsidiary keypair and related symmetric across potentially many files. This is stored separately to the encrypted files themselves (in a discrete s3 bucket - configured using the ```fs.s3.cse.encr.keypairs.bucket``` configuration parameter). The ID of the keypair used to protect each file is stored as metadata with each file (using the ```keyid``` parameter). The logic for decryption is as follows:
+      * If the local cache of keypairs has expired (which happens every 24 hours), clear it now
+      * If the local keypair cache contains the keypair required to read the file in question - use it (see following steps), otherwise load it from S3 and add it to the local keypair cache. Loading the keypair consists of:
+        * use the file's ```keyid``` parameter to retrieve the keypair object from the ```fs.s3.cse.encr.keypairs.bucket``` S3 bucket
+        * parse the JSON that is returned into a Java object
+        * get the private half of the subsidiary keypair, the related (DKS-encrypted) symmetric key and its IV
+        * decrypt symmetric key using DKS
+        * extract symmetric key's IV from Base64-encoded string
+        * use the symmetric key to decrypt the private half of the subsidiary keypair (ie yielding KeyPair to pass back as EncryptionMaterials)
+        * store the keypair in the local keypair cache
+      * generate an EncryptionMaterials object containing the private key (retrieved from the local keypair cache)
+      * return the generated EncryptionMaterials object
+* ```determineDoubleEncryptionMaterialsForEncrypt()```
+  * The ```doubleReuse``` protection method for encrypting data (note: there is no equivalent method for the ```double``` method as this is now deprecated). The logic for decryption is as follows:
+    *  if there is no current subsidiary encryption keypair, or it has expired (ie generated more than 24 hours ago) then generate a new one:
+      * generate new subsidiary keypair
+      * encode private half (to DER format)
+      * generate a symmetric key to encrypt both halves of the subsidiary keypair (required because the subsidiary keypair is too long to be encrypted with DKS, so DKS will encrypt the symmetric key instead)
+      * encrypt the private half of the subsidiary keypair with the symmetric key and convert to base64
+      * encrypt the symmetric key with DataWorks' DKS
+      * convert everything to Base64 and use the resulting strings to construct a JSON-formatted record to represent the subsidiary keypair, related symmetric key and its IV
+      * generate a unique ID and write the JSON keyfile to s3 using ID as the filename
+      * store locally as the current keypair and set expiry for max 24 hours
+    * generate an EncryptionMaterials object containing the public key of the current (ie locally stored) keypair. This will be used by EMR to encrypt the data before it is stored to S3 via EMRFS. The ecnryoted data will include metadata derived from this EncryptionMaterials object, namely:
+      * mode = ```doubleReuse```
+      * keyid = ```<ID of the current keypair>```
+    * return the generated EncryptionMaterials object
+* ```encryptWithDKS(byte[] data)```
+  * Note: TODO this function will need to be rewritten so that encryption is performed by the DKS
+  * This returns a Base64-encoded string containing an encrypted version of the data supplied as input. The encryption is intended to be equivalent to the 'master key' encryption that will provided by DKS when DKS is integrated
+* ```decryptWithDKS(String msg)```
+  * Note: TODO this function will need to be rewritten so that decryption is performed by the DKS
+  * This accepts a Base64-encoded string as input, representing data previously encrypted using the approach equivalent to the 'master key' encryption that will provided by DKS when DKS is integrated. It returns a byte array representing the decrypted version of the data supplied as input
