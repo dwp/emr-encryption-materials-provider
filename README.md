@@ -110,8 +110,11 @@ This component implements the ```EncryptionMaterialsProvider``` interface
       * generate an EncryptionMaterials object containing the private key (retrieved from the local keypair cache)
       * return the generated EncryptionMaterials object
 * ```determineDoubleEncryptionMaterialsForEncrypt()```
-  * The ```doubleReuse``` protection method for encrypting data (note: there is no equivalent method for the ```double``` method as this is now deprecated). The logic for decryption is as follows:
-    *  if there is no current subsidiary encryption keypair, or it has expired (ie generated more than 24 hours ago) then generate a new one:
+  * The ```doubleReuse``` protection method for encrypting data (note: there is no equivalent method for the ```double``` method as this is now deprecated). 
+  * ```Double``` indicates that protecting data via this mechanism involves two levels of key encryption. 
+  * ```Reuse``` acknowledges that the subsidiary keys are reused to encrypt a number of files.
+  * The logic for encryption is as follows:
+    *  if there is no current subsidiary encryption keypair, or it has expired (ie generated more than 24 hours ago) then generate a new one (the following logic is in the ```generateSubsidiaryKP()``` method within the code):
       * generate new subsidiary keypair
       * encode private half (to DER format)
       * generate a symmetric key to encrypt both halves of the subsidiary keypair (required because the subsidiary keypair is too long to be encrypted with DKS, so DKS will encrypt the symmetric key instead)
@@ -130,3 +133,31 @@ This component implements the ```EncryptionMaterialsProvider``` interface
 * ```decryptWithDKS(String msg)```
   * Note: TODO this function will need to be rewritten so that decryption is performed by the DKS
   * This accepts a Base64-encoded string as input, representing data previously encrypted using the approach equivalent to the 'master key' encryption that will provided by DKS when DKS is integrated. It returns a byte array representing the decrypted version of the data supplied as input
+
+# Considerations
+
+## DKS
+
+The two methods ```encryptWithDKS()``` and ```decryptWithDKS()``` do not currently take account of key rotation within DKS/HSM - they are currently written as though the 'master key' never changes. Although data stored within S3 (using EMRFS) is never directly encrypted using the enmcryption details within DKS/HSM, the subsidiary keys *are* dependent on DKS/HSM for their encryption. These two methods will need to accommodate returning (for encrypt) and consuming (for decrypt) ID that determione which DKS/HSM keys are to be used in these operations, and the IDs will need to be stored when the subsidiary keypairs are written to S3 (see the generateSubsidiaryKP() method in the code)
+
+# To Do
+
+## Encrypting test data in S3 using the ```doubleReuse``` method
+
+An EMR cluster configured to use the ```DWEncryptionMaterialsProvider``` expects the data it reads to be available in S3 (via the EMRFS protocol) and for that data to be encrypted using the ```doubleReuse``` approach.
+
+A suggested approach to achieving this is:
+
+* Produce a Java-based Lambda function which is triggered when data (unencrypted) is added to a given S3 bucket, and passes that data into the Lambda function.
+* The Lambda function will read unencrypted data and encrypt it using encryption materials derived using the approach represented in the ```determineDoubleEncryptionMaterialsForEncrypt()``` method described above. Note: the ```DWEncryptionMaterialsProvider``` class does not encrypt the contents - rather it generates and provides the public half of a subsidiary keypair that is used, in turn, to encrypt a symmetric data key used encrypt the content itself. The logic needs to be:
+  * Data is added to a designated 'drop' bucket in S3
+  * S3 triggers a lambda function to encrypt the data (as described abve)
+  * The lambda receives the unencrypted data
+  * The lambda generates a symmetric key and encrypts the data using this key
+  * The lambda generates encrypt materials as represented in the ```determineDoubleEncryptionMaterialsForEncrypt()``` method in this the ```DWEncryptionMaterialsProvider``` class
+  The lambda writes the encrypted data to an S3 bucket designated to store encrypted data. This includes creating the appropriate metadata that describes the encrypted symmetric key - used to encrypt the data, and details of the subsidiary encryption materials. The resulting metadata for encrypted files will include:
+    * ```x-amz-meta-x-amz-key``` - the symmetric key used to encrypt the content
+    * ```x-amz-meta-x-amz-iv``` - the IV for the symmetric key used to encrypt the content
+    * ```x-amz-meta-x-amz-matdesc``` - the description of theencryption materials used to encrypt the symmetric key:
+      * ```keyid``` - the key of the subsidiary keypair
+      * ```mode``` - "doubleReuse"
