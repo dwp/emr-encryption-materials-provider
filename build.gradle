@@ -1,0 +1,25 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+
+group = 'uk.gov.dwp.dataworks.encryptionmaterialsprovider'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.amazonaws:aws-java-sdk:1.11.567'
+    implementation 'org.apache.hadoop:hadoop-common:2.4.0'
+    implementation 'com.google.guava:guava:15.0'
+    implementation 'commons-io:commons-io:2.4'
+    implementation 'com.google.code.gson:gson:2.8.5'
+
+    testCompile "junit:junit:3.8.1"
+}
+
+mainClassName = "uk.gov.dwp.dataworks.encryptionmaterialsprovider.DWEncryptionMaterialsProvider"
