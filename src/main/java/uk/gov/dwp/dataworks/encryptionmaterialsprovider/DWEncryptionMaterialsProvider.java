@@ -73,7 +73,6 @@ public class DWEncryptionMaterialsProvider implements EncryptionMaterialsProvide
     private EncryptionMaterials encryptionMaterials;
     private String strDescriptionValue;
     private String strEncryptionKeypairsBucket;
-    private Gson gson;
     private PublicKey publicKey;
     private PrivateKey privateKey;
     private KeyPair kpCurrentSubsidiary;
@@ -84,24 +83,22 @@ public class DWEncryptionMaterialsProvider implements EncryptionMaterialsProvide
     private HashMap<String, KeyPair> mapDecryptionKPs;
     private LocalDateTime datetimeDecryptionKPsExpiryTime;
 
-    private void init() {
+    public DWEncryptionMaterialsProvider() {
+        logger.setLevel(Level.WARNING);
 
+        this.b64Encoder = Base64.getEncoder();
+        this.b64Decoder = Base64.getDecoder();
+    }
+
+    private void init() {
         logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() Conf2: " + this.conf.toString());
 
         try {
 
-            this.b64Encoder = Base64.getEncoder();
-            this.b64Decoder = Base64.getDecoder();
-            this.gson = new GsonBuilder()
-                    .serializeSpecialFloatingPointValues()
-                    .serializeNulls()
-                    .create();
             logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() gson initialised");
 
-            this.strDescriptionValue = this.conf.get(CSE_RSA_NAME_CONF);
-            this.strEncryptionKeypairsBucket = this.conf.get(CSE_ENCR_KEYPAIRS_BUCKET);
-            Preconditions.checkArgument(!Strings.isNullOrEmpty(this.strDescriptionValue), String.format("%s cannot be empty", CSE_RSA_NAME_CONF));
-            Preconditions.checkArgument(!Strings.isNullOrEmpty(this.strEncryptionKeypairsBucket), String.format("%s cannot be empty", CSE_ENCR_KEYPAIRS_BUCKET));
+            setDescriptionValue(this.conf.get(CSE_RSA_NAME_CONF));
+            setEncryptionKeyPairsBucket(this.conf.get(CSE_ENCR_KEYPAIRS_BUCKET));
             logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() preconditions checked");
 
             URI uriPublicKey = new URI(this.conf.get(CSE_RSA_PUBLIC_CONF));
@@ -109,61 +106,29 @@ public class DWEncryptionMaterialsProvider implements EncryptionMaterialsProvide
 
             setupClearKeypairCache();
 
-            InputStream publicKeyIS, privateKeyIS;
+            //* see 'NOTE-1' above
+            logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() s3 or S3n scheme for public key");
+
+            initializeAmazonS3(); //* see 'NOTE-1' above
+            String publicKeyS3Bucket = getBucket(uriPublicKey);
+            logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() publicKeyS3Bucket: " + publicKeyS3Bucket);
+
+            String publicKeyS3Key = getKey(uriPublicKey);
+            logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() publicKeyS3Key: " + publicKeyS3Key);
+
+            InputStream publicKeyIS = s3.getObject(publicKeyS3Bucket, publicKeyS3Key).getObjectContent();
 
             //* see 'NOTE-1' above
-            if ("s3".equalsIgnoreCase(uriPublicKey.getScheme()) || "s3n".equalsIgnoreCase(uriPublicKey.getScheme())) {
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() s3 or S3n scheme for public key");
+            String privateKeyS3Bucket = getBucket(uriPrivateKey);
+            logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() privateKeyS3Bucket: " + privateKeyS3Bucket);
 
-                initializeAmazonS3(); //* see 'NOTE-1' above
-                String publicKeyS3Bucket = getBucket(uriPublicKey);
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() publicKeyS3Bucket: " + publicKeyS3Bucket);
+            String privateKeyS3Key = getKey(uriPrivateKey);
+            logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() privateKeyS3Key: " + privateKeyS3Key);
 
-                String publicKeyS3Key = getKey(uriPublicKey);
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() publicKeyS3Key: " + publicKeyS3Key);
-
-                publicKeyIS = s3.getObject(publicKeyS3Bucket, publicKeyS3Key).getObjectContent();
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() publicKeyIS: " + publicKeyIS.toString());
-            } else {
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() no s3 or S3n scheme for public key");
-
-                Path publicKeyPath = new Path(uriPublicKey);
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() publicKeyPath: " + publicKeyPath.toString());
-
-                FileSystem fs = publicKeyPath.getFileSystem(conf);
-                publicKeyIS = fs.open(publicKeyPath);
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() publicKeyIS: " + publicKeyIS.toString());
-            }
-
-            //* see 'NOTE-1' above
-            if ("s3".equalsIgnoreCase(uriPrivateKey.getScheme()) || "s3n".equalsIgnoreCase(uriPrivateKey.getScheme())) {
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() s3 or S3n scheme for private key");
-
-                initializeAmazonS3(); //* see 'NOTE-1' above
-                String privateKeyS3Bucket = getBucket(uriPrivateKey);
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() privateKeyS3Bucket: " + privateKeyS3Bucket);
-
-                String privateKeyS3Key = getKey(uriPrivateKey);
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() privateKeyS3Key: " + privateKeyS3Key);
-
-                privateKeyIS = s3.getObject(privateKeyS3Bucket, privateKeyS3Key).getObjectContent();
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() privateKeyIS: " + privateKeyIS.toString());
-            } else {
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() no s3 or S3n scheme for private key");
-
-                Path privateKeyPath = new Path(uriPrivateKey);
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() privateKeyPath: " + privateKeyPath.toString());
-
-                FileSystem fs = privateKeyPath.getFileSystem(conf);
-                privateKeyIS = fs.open(privateKeyPath);
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() privateKeyIS: " + privateKeyIS.toString());
-            }
+            InputStream privateKeyIS = s3.getObject(privateKeyS3Bucket, privateKeyS3Key).getObjectContent();
 
             this.publicKey = getRSAPublicKey(publicKeyIS);
-            logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() publicKey: " + this.publicKey.toString());
-
             this.privateKey = getRSAPrivateKey(privateKeyIS);
-            logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() privateKey: " + this.privateKey.toString());
 
         } catch (URISyntaxException | IOException | NoSuchAlgorithmException | InvalidKeySpecException e) {
             logger.log(Level.SEVERE, "[DWEncryptionMaterialsProvider]->init() Exception: " + e);
@@ -174,6 +139,16 @@ public class DWEncryptionMaterialsProvider implements EncryptionMaterialsProvide
 
             throw new RuntimeException(e);
         }
+    }
+
+    private void setDescriptionValue(String value) {
+        if (!Strings.isNullOrEmpty(this.strDescriptionValue)) return;
+        this.strDescriptionValue = value;
+    }
+
+    private void setEncryptionKeyPairsBucket(String value) {
+        if (!Strings.isNullOrEmpty(this.strEncryptionKeypairsBucket)) return;
+        this.strEncryptionKeypairsBucket = value;
     }
 
     //* NOTE-1: The following method is not required once the HSM and DKS are available - in the interim it is used to host a
@@ -220,17 +195,12 @@ public class DWEncryptionMaterialsProvider implements EncryptionMaterialsProvide
                 String mode = materialsDescription.getOrDefault("mode", "");
                 logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->getEncryptionMaterials(Map): decryption mode = '" + mode + "'");
 
-                if (mode.equals("double")) {
-                    return determineDoubleEncryptionMaterials(materialsDescription);
 
-                } else {
+                if (mode.equals("doubleReuse")) {
+                    return determineDoubleReuseEncryptionMaterials(materialsDescription);
 
-                    if (mode.equals("doubleReuse")) {
-                        return determineDoubleReuseEncryptionMaterials(materialsDescription);
-
-                    } else { // no mode provided, indicating a request to encrypt
-                        return determineDoubleEncryptionMaterialsForEncrypt();
-                    }
+                } else { // no mode provided, indicating a request to encrypt, allows the read of unencypted data.
+                    return determineDoubleEncryptionMaterialsForEncrypt();
                 }
             }
 
@@ -245,36 +215,18 @@ public class DWEncryptionMaterialsProvider implements EncryptionMaterialsProvide
 
     @Override
     public EncryptionMaterials getEncryptionMaterials() {
-        try {
-            logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->getEncryptionMaterials()");
+        logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->getEncryptionMaterials()");
 
-            if (this.encryptionMaterials != null) {
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->getEncryptionMaterials(): this.materialsDescription is not null:" + this.encryptionMaterials.toString());
-
-                try {
-                    logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->getEncryptionMaterials(): this.encryptionMaterials JSON = " + this.gson.toJson(this.encryptionMaterials));
-                } catch (Exception e) {
-                    logger.log(Level.SEVERE, "[DWEncryptionMaterialsProvider]->getEncryptionMaterials() Gson Exception: " + e);
-                    e.printStackTrace();
-                }
-
-                return this.encryptionMaterials;
-            } else {
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->getEncryptionMaterials() Exception: RSA key pair is not initialized.");
-
-                throw new RuntimeException("RSA key pair is not initialized.");
-            }
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "[DWEncryptionMaterialsProvider]->getEncryptionMaterials() General Exception: " + e);
-
-            throw new RuntimeException(e);
+        if (this.encryptionMaterials == null) {
+            logger.log(Level.SEVERE, "[DWEncryptionMaterialsProvider]->getEncryptionMaterials() Exception: RSA key pair is not initialized.");
+            throw new RuntimeException("RSA key pair is not initialized.");
         }
+        return this.encryptionMaterials;
     }
 
     @Override
     public void refresh() {
         logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->refresh()");
-
     }
 
     @Override
@@ -335,70 +287,7 @@ public class DWEncryptionMaterialsProvider implements EncryptionMaterialsProvide
     private String getKey(URI s3Uri) throws URISyntaxException {
         logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->getKey(): s3Uri: " + s3Uri.toString());
 
-        return s3Uri.getPath().substring(1);
-    }
-
-    private EncryptionMaterials determineDoubleEncryptionMaterials(Map<String, String> materialsDescription) {
-        logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials()");
-
-        try {
-
-            String b64EEM = materialsDescription.getOrDefault("eem", "");
-            logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials() b64EEM = " + b64EEM);
-
-            String b64EEMKey = materialsDescription.getOrDefault("eemkey", "");
-            logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials() b64EEMKey = " + b64EEMKey);
-
-            String b64EEMKeyIV = materialsDescription.getOrDefault("eemkeyiv", "");
-            logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials() b64EEMKeyIV = " + b64EEMKeyIV);
-
-            if (b64EEM != "" && b64EEMKey != "" && b64EEMKeyIV != "") {
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials() encryption material description successfully received");
-
-                // decrypt second sym using private key from DKS/HSM PK
-                byte[] bytesEEMKey = decryptWithDKS(b64EEMKey);
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials() EEMKey = " + new String(bytesEEMKey));
-
-                // extract EEM from Base64-encoded string
-                byte[] bytesEEM = this.b64Decoder.decode(b64EEM);
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials() EEM = " + new String(bytesEEM));
-
-                // extract EEMKeyIV from Base64-encoded string
-                byte[] bytesEEMKeyIV = this.b64Decoder.decode(b64EEMKeyIV);
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials() b64EEMKeyIV = " + new String(bytesEEMKeyIV));
-
-                // decrypt second sym (envSymKey2) itself - yielding KeyPair to pass back as encrption Materials
-                SecretKey envSymKey2 = new SecretKeySpec(bytesEEMKey, "AES");
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials() got envSymKey2 = " + envSymKey2.toString());
-
-                Cipher cipherEnvSymKey2 = Cipher.getInstance("AES/GCM/NoPadding");
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials() got cipher2 instance = " + cipherEnvSymKey2.toString());
-
-                cipherEnvSymKey2.init(Cipher.DECRYPT_MODE, envSymKey2, new IvParameterSpec(bytesEEMKeyIV));
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials() initialised cipher2");
-
-                byte[] bytesEnvKP = cipherEnvSymKey2.doFinal(bytesEEM);
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials() bytesEnvKP = " + new String(bytesEnvKP));
-
-                KeyPair skKP = new KeyPair(null, getRSAPrivateKey(bytesEnvKP));
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials() skKP: " + skKP.toString());
-
-                EncryptionMaterials localEncryptionMaterials = new EncryptionMaterials(skKP);
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials() localEncryptionMaterials: " + localEncryptionMaterials.toString());
-
-                localEncryptionMaterials.addDescription(CSE_RSA_NAME, strDescriptionValue);
-                logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials() localEncryptionMaterials - adding description: " + CSE_RSA_NAME + ", " + strDescriptionValue);
-
-                return localEncryptionMaterials;
-
-            }
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "[DWEncryptionMaterialsProvider]->determineDoubleEncryptionMaterials() General Exception: " + e);
-
-            throw new RuntimeException(e);
-        }
-
-        return this.encryptionMaterials;
+        return s3Uri.getPath();
     }
 
     private EncryptionMaterials determineDoubleReuseEncryptionMaterials(Map<String, String> materialsDescription) {
