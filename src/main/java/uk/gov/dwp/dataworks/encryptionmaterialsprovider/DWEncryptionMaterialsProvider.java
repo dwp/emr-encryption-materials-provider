@@ -95,7 +95,6 @@ public class DWEncryptionMaterialsProvider implements EncryptionMaterialsProvide
 
         try {
 
-            logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->init() gson initialised");
 
             setDescriptionValue(this.conf.get(CSE_RSA_NAME_CONF));
             setEncryptionKeyPairsBucket(this.conf.get(CSE_ENCR_KEYPAIRS_BUCKET));
@@ -203,25 +202,20 @@ public class DWEncryptionMaterialsProvider implements EncryptionMaterialsProvide
                     return determineDoubleEncryptionMaterialsForEncrypt();
                 }
             }
-
+            throw new RuntimeException("Encryption Materials Not Initialised");
         } catch (Exception e) {
             logger.log(Level.SEVERE, "[DWEncryptionMaterialsProvider]->getEncryptionMaterials(Map) General Exception: " + e);
 
             throw new RuntimeException(e);
         }
-
-        return this.encryptionMaterials;
     }
 
     @Override
     public EncryptionMaterials getEncryptionMaterials() {
         logger.log(Level.INFO, "[DWEncryptionMaterialsProvider]->getEncryptionMaterials()");
 
-        if (this.encryptionMaterials == null) {
-            logger.log(Level.SEVERE, "[DWEncryptionMaterialsProvider]->getEncryptionMaterials() Exception: RSA key pair is not initialized.");
-            throw new RuntimeException("RSA key pair is not initialized.");
-        }
-        return this.encryptionMaterials;
+        logger.log(Level.SEVERE, "[DWEncryptionMaterialsProvider]->getEncryptionMaterials() Exception: RSA key pair is not initialized.");
+        throw new RuntimeException("RSA key pair is not initialized.");
     }
 
     @Override
