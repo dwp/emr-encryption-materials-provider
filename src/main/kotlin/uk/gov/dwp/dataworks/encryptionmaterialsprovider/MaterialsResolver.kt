@@ -1,9 +1,8 @@
 package uk.gov.dwp.dataworks.encryptionmaterialsprovider
 
-import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.model.EncryptionMaterials
+import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -16,72 +15,75 @@ import java.security.PublicKey
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import java.time.LocalDateTime
-import java.util.Base64
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
+import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-class MaterialsResolver(conf: Configuration) {
+class MaterialsResolver(conf: Configuration, private val s3: AmazonS3, cacheExpirySeconds: Long) {
 
-    private val encryptionKeyPairsBucket: String = conf.get("fs.s3.cse.encr.keypairs.bucket")
+    private val requiredConfiguration = setOf("fs.s3.cse.encr.keypairs.bucket", "fs.s3.cse.rsa.public", "fs.s3.cse.rsa.private")
+    private val encryptionKeyPairsBucket: String
     private val keyFactory = java.security.KeyFactory.getInstance("RSA")
 
-    private val clearKeyPairCache = CacheBuilder.newBuilder()
-            .expireAfterWrite(24L, TimeUnit.HOURS)
+    val clearKeyPairCache: Cache<String, KeyPair> = CacheBuilder.newBuilder()
+            .expireAfterWrite(cacheExpirySeconds, TimeUnit.SECONDS)
             .build<String, KeyPair>()
 
-    private val s3: AmazonS3 = AmazonS3ClientBuilder.standard()
-            .withRegion(Regions.EU_WEST_2)
-            .build()
-
     private lateinit var subsidiaryKeyPair: KeyPair
-    private lateinit var subsidiaryFilename: String
+    lateinit var subsidiaryFilename: String
     private var subsidiaryExpiry: LocalDateTime = LocalDateTime.now()
 
-    private lateinit var publicKey: PublicKey
-    private lateinit var privateKey: PrivateKey
+    private val publicKey: PublicKey
+    private val privateKey: PrivateKey
 
     init {
-
+        ensureConfigurationHasRequired(conf)
+        encryptionKeyPairsBucket = conf.get("fs.s3.cse.encr.keypairs.bucket")
         val publicKeyUri = URI(conf.get("fs.s3.cse.rsa.public"))
-        s3.getObject(publicKeyUri.host, publicKeyUri.path).objectContent.use {
-            publicKey = keyFactory.generatePublic(X509EncodedKeySpec(it.readBytes()))
+        publicKey = s3.getObject(publicKeyUri.host, publicKeyUri.path.removePrefix("/")).objectContent.use {
+            keyFactory.generatePublic(X509EncodedKeySpec(it.readBytes()))
         }
 
         val privateKeyUri = URI(conf.get("fs.s3.cse.rsa.private"))
-        s3.getObject(privateKeyUri.host, privateKeyUri.path).objectContent.use {
-            privateKey = keyFactory.generatePrivate(PKCS8EncodedKeySpec(it.readBytes()))
+        privateKey = s3.getObject(privateKeyUri.host, privateKeyUri.path.removePrefix("/")).objectContent.use {
+            keyFactory.generatePrivate(PKCS8EncodedKeySpec(it.readBytes()))
         }
     }
 
-    fun getEncryptionMaterials(materialsDescription: MutableMap<String, String>?): EncryptionMaterials {
-        return when(materialsDescription?.get("mode")) {
-            "doubleReuse" -> determineDoubleReuseEncryptionMaterials(materialsDescription)
+    private fun ensureConfigurationHasRequired(conf: Configuration) {
+        val notFound = requiredConfiguration.filter { conf.get(it) == null || conf.get(it).isEmpty()}
+        check(notFound.isEmpty()) { "Required configuration items $notFound were not found or were empty" }
+    }
+
+    fun getEncryptionMaterials(materialsDescription: MutableMap<String, String?>): EncryptionMaterials {
+        val keyId: String = materialsDescription["keyid"] ?: "fdf11ee8-644d-4c2e-a9de-698af670a618"
+        return when(materialsDescription["mode"]) {
+            "doubleReuse" -> determineDoubleReuseEncryptionMaterials(keyId)
             null -> throw RuntimeException("Encryption Materials Not Initialised")
             else -> determineDoubleEncryptionMaterialsForEncrypt()
         }
     }
 
-    private fun determineDoubleReuseEncryptionMaterials(materialsDescription: MutableMap<String, String>): EncryptionMaterials {
+    private fun determineDoubleReuseEncryptionMaterials(keyId: String): EncryptionMaterials {
         val decryptionKeyPair: KeyPair?
-        val keyId = materialsDescription.getOrDefault("keyid", "fdf11ee8-644d-4c2e-a9de-698af670a618")
 
-        if(clearKeyPairCache.getIfPresent(keyId) == null) {
+        if(clearKeyPairCache.getIfPresent(keyId) != null) {
             decryptionKeyPair = clearKeyPairCache.getIfPresent(keyId)
         }
         else {
             val subsidiaryKey = readFromS3(encryptionKeyPairsBucket, keyId)
-            val mapKpSubsidiary: Map<String, String> = Gson()
+            val keyPairSubsidiary: Map<String, String> = Gson()
                     .fromJson(subsidiaryKey, object : TypeToken<HashMap<String, String>>() {}.type)
 
-            val symEncryptedPrivKeyPair = mapKpSubsidiary["priv"]?.toByteArray()
+            val symEncryptedPrivKeyPair = keyPairSubsidiary["priv"]?.toByteArray()
 
-            val symKeyBytes = decryptWithDKS(mapKpSubsidiary["symkey"] ?: "")
+            val symKeyBytes = decryptWithDKS(keyPairSubsidiary["symkey"] ?: "")
             val secretSymKey = SecretKeySpec(symKeyBytes, "AES")
-            val symKeyIv = Base64.getDecoder().decode(mapKpSubsidiary["symkeyiv"])
+            val symKeyIv = Base64.getDecoder().decode(keyPairSubsidiary["symkeyiv"])
 
             val cipherSymKey = Cipher.getInstance("AES/GCM/NoPadding")
             cipherSymKey.init(Cipher.DECRYPT_MODE, secretSymKey, IvParameterSpec(symKeyIv))
@@ -95,7 +97,7 @@ class MaterialsResolver(conf: Configuration) {
     }
 
     private fun determineDoubleEncryptionMaterialsForEncrypt(): EncryptionMaterials {
-        if(subsidiaryFilename.isBlank() || LocalDateTime.now().isAfter(subsidiaryExpiry)) {
+        if(!::subsidiaryFilename.isInitialized || LocalDateTime.now().isAfter(subsidiaryExpiry)) {
             generateSubsidiaryKeyPair()
         }
 
@@ -130,7 +132,7 @@ class MaterialsResolver(conf: Configuration) {
         subsidiaryExpiry = LocalDateTime.now().plusHours(24L)
     }
 
-    private fun readFromS3(bucket: String, key: String): String {
+    fun readFromS3(bucket: String, key: String): String {
         s3.getObject(bucket, key).objectContent.use {
             return String(it.readBytes())
         }

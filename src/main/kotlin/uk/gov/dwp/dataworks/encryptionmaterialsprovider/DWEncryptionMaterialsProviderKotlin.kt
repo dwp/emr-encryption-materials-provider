@@ -1,5 +1,8 @@
 package uk.gov.dwp.dataworks.encryptionmaterialsprovider
 
+import com.amazonaws.regions.Regions
+import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.model.EncryptionMaterials
 import com.amazonaws.services.s3.model.EncryptionMaterialsProvider
 import org.apache.hadoop.conf.Configurable
@@ -7,8 +10,11 @@ import org.apache.hadoop.conf.Configuration
 
 class DWEncryptionMaterialsProviderKotlin : EncryptionMaterialsProvider, Configurable {
 
-    private lateinit var configuration: Configuration
+    lateinit var configuration: Configuration
     private lateinit var materialsResolver: MaterialsResolver
+    private val s3: AmazonS3 = AmazonS3ClientBuilder.standard()
+            .withRegion(Regions.EU_WEST_2)
+            .build()
 
     override fun getConf(): Configuration {
         return this.configuration
@@ -16,7 +22,7 @@ class DWEncryptionMaterialsProviderKotlin : EncryptionMaterialsProvider, Configu
 
     override fun setConf(conf: Configuration) {
         this.configuration = conf
-        materialsResolver = MaterialsResolver(conf)
+        materialsResolver = MaterialsResolver(conf, s3, 86400L)
     }
 
     override fun refresh() {}
@@ -26,6 +32,7 @@ class DWEncryptionMaterialsProviderKotlin : EncryptionMaterialsProvider, Configu
     }
 
     override fun getEncryptionMaterials(materialsDescription: MutableMap<String, String>?): EncryptionMaterials {
-        return materialsResolver.getEncryptionMaterials(materialsDescription)
+        check(materialsDescription != null) { "Cannot handle materialsDescription as it is null" }
+        return materialsResolver.getEncryptionMaterials(materialsDescription as MutableMap<String, String?>)
     }
 }
