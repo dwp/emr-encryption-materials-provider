@@ -8,7 +8,10 @@ import com.amazonaws.services.s3.model.EncryptionMaterialsProvider
 import org.apache.hadoop.conf.Configurable
 import org.apache.hadoop.conf.Configuration
 
-class DWEncryptionMaterialsProviderKotlin : EncryptionMaterialsProvider, Configurable {
+/**
+ * Class to provide encryption materials to an EMR cluster using RSA key pair stored in S3 buckets.
+ */
+class DWEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable {
 
     lateinit var configuration: Configuration
     private lateinit var materialsResolver: MaterialsResolver
