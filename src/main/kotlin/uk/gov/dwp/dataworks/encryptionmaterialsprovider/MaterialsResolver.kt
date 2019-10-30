@@ -14,13 +14,12 @@ import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
+import java.time.Duration
 import java.time.LocalDateTime
 import java.util.*
-import java.util.concurrent.TimeUnit
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 class MaterialsResolver(conf: Configuration, private val s3: AmazonS3, cacheExpirySeconds: Long) {
@@ -30,8 +29,8 @@ class MaterialsResolver(conf: Configuration, private val s3: AmazonS3, cacheExpi
     private val keyFactory = java.security.KeyFactory.getInstance("RSA")
 
     val clearKeyPairCache: Cache<String, KeyPair> = CacheBuilder.newBuilder()
-            .expireAfterWrite(cacheExpirySeconds, TimeUnit.SECONDS)
-            .build<String, KeyPair>()
+            .expireAfterWrite(Duration.ofSeconds(cacheExpirySeconds))
+            .build()
 
     private lateinit var subsidiaryKeyPair: KeyPair
     lateinit var subsidiaryFilename: String
@@ -79,16 +78,16 @@ class MaterialsResolver(conf: Configuration, private val s3: AmazonS3, cacheExpi
             val keyPairSubsidiary: Map<String, String> = Gson()
                     .fromJson(subsidiaryKey, object : TypeToken<HashMap<String, String>>() {}.type)
 
-            val symEncryptedPrivKeyPair = keyPairSubsidiary["priv"]?.toByteArray()
+            val symEncryptedPrivKeyPair = Base64.getDecoder().decode(keyPairSubsidiary["priv"]?.toByteArray())
 
             val symKeyBytes = decryptWithDKS(keyPairSubsidiary["symkey"] ?: "")
             val secretSymKey = SecretKeySpec(symKeyBytes, "AES")
             val symKeyIv = Base64.getDecoder().decode(keyPairSubsidiary["symkeyiv"])
 
             val cipherSymKey = Cipher.getInstance("AES/GCM/NoPadding")
-            cipherSymKey.init(Cipher.DECRYPT_MODE, secretSymKey, IvParameterSpec(symKeyIv))
+            cipherSymKey.init(Cipher.DECRYPT_MODE, secretSymKey, GCMParameterSpec(128, symKeyIv))
 
-            val keyPairBytes = cipherSymKey.doFinal(Base64.getDecoder().decode(symEncryptedPrivKeyPair))
+            val keyPairBytes = cipherSymKey.doFinal(symEncryptedPrivKeyPair)
             decryptionKeyPair = KeyPair(null, keyFactory.generatePrivate(PKCS8EncodedKeySpec(keyPairBytes)))
             clearKeyPairCache.put(keyId, decryptionKeyPair)
         }

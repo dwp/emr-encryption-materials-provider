@@ -12,8 +12,6 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import java.security.KeyPair
 import java.security.KeyPairGenerator
-import java.security.MessageDigest
-import java.security.SecureRandom
 import java.util.*
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -34,7 +32,7 @@ class MaterialsResolverTest {
     @BeforeEach
     fun init(s3Client: AmazonS3) {
         fakePublicPrivateKey = generateTestKeyPair()
-        val subsidiaryKey = generateSubsidiaryKey()
+        val subsidiaryKey = generateTestSubsidiaryKey()
         this.s3Client = s3Client
         s3Client.createBucket(dummyBucket)
         s3Client.putObject(PutObjectRequest(dummyBucket, publicKeyPath,
@@ -48,25 +46,25 @@ class MaterialsResolverTest {
         conf.set("fs.s3.cse.encr.keypairs.bucket", dummyBucket)
         conf.set("fs.s3.cse.rsa.public", "s3://dummybucket/publicKeyPath")
         conf.set("fs.s3.cse.rsa.private", "s3://dummybucket/privateKeyPath")
-        materialsResolver = MaterialsResolver(conf, s3Client, 10L)
+        materialsResolver = MaterialsResolver(conf, s3Client, 1L)
     }
 
     private fun generateTestKeyPair(): KeyPair {
         val keyGen = KeyPairGenerator.getInstance("RSA")
-        val random = SecureRandom.getInstance("SHA1PRNG", "SUN")
-        val md = MessageDigest.getInstance("SHA-256");
-        random.setSeed(md.digest("seed".toByteArray()))
-        keyGen.initialize(1024, random)
+        keyGen.initialize(1024)
         return keyGen.genKeyPair()
     }
 
-    private fun generateSubsidiaryKey(): String {
+    private fun generateTestSubsidiaryKey(): String {
         val subsidiaryKeyPair = generateTestKeyPair()
         val cipherSymKey = Cipher.getInstance("AES/GCM/NoPadding")
+
         val secretSymKey = KeyGenerator.getInstance("AES").generateKey()
         val b64EncryptedSymKey = encryptWithFakeKey(secretSymKey.encoded)
+
         cipherSymKey.init(Cipher.ENCRYPT_MODE, secretSymKey)
-        return """{"priv":"${String(Base64.getEncoder().encode(subsidiaryKeyPair.private.encoded))}",
+        val privateEncryptedWithSymKey = cipherSymKey.doFinal(subsidiaryKeyPair.private.encoded)
+        return """{"priv":"${String(Base64.getEncoder().encode(privateEncryptedWithSymKey))}",
             |"symkeyiv":"${String(Base64.getEncoder().encode(cipherSymKey.iv))}",
             |"symkey":"${String(b64EncryptedSymKey)}"}""".trimMargin()
     }
@@ -112,10 +110,12 @@ class MaterialsResolverTest {
         assertThat(materialsResolver.clearKeyPairCache.size()).isEqualTo(0)
 
         //Add to cache
-        materialsResolver.getEncryptionMaterials(mutableMapOf(Pair("mode", "doubleReuse"), Pair("keyid", subsidiaryKeyId)))
+        materialsResolver.getEncryptionMaterials(
+                mutableMapOf(Pair("mode", "doubleReuse"), Pair("keyid", subsidiaryKeyId)))
         assertThat(materialsResolver.clearKeyPairCache.size()).isEqualTo(1)
         // Wait for cache expiry
-        Thread.sleep(150)
+        Thread.sleep(1500)
+        materialsResolver.clearKeyPairCache.cleanUp()
         assertThat(materialsResolver.clearKeyPairCache.size()).isEqualTo(0)
     }
 
@@ -124,7 +124,8 @@ class MaterialsResolverTest {
         val testKeyPair = generateTestKeyPair()
         assertThat(materialsResolver.clearKeyPairCache.size()).isEqualTo(0)
         materialsResolver.clearKeyPairCache.put("testKey", testKeyPair)
-        val encMaterials = materialsResolver.getEncryptionMaterials(mutableMapOf(Pair("mode", "doubleReuse"), Pair("keyid", "testKey")))
+        val encMaterials = materialsResolver.getEncryptionMaterials(
+                mutableMapOf(Pair("mode", "doubleReuse"), Pair("keyid", "testKey")))
 
         assertThat(materialsResolver.clearKeyPairCache.size()).isEqualTo(1)
         assertThat(encMaterials.keyPair).isEqualTo(testKeyPair)
@@ -133,10 +134,11 @@ class MaterialsResolverTest {
     @Test
     fun willReadKeyPairFromS3IfNotInCache() {
         assertThat(materialsResolver.clearKeyPairCache.size()).isEqualTo(0)
-        val encMaterials = materialsResolver.getEncryptionMaterials(mutableMapOf(Pair("mode", "doubleReuse"), Pair("keyid", subsidiaryKeyId)))
+        val encMaterials = materialsResolver.getEncryptionMaterials(
+                mutableMapOf(Pair("mode", "doubleReuse"), Pair("keyid", subsidiaryKeyId)))
 
         assertThat(materialsResolver.clearKeyPairCache.size()).isEqualTo(1)
-        assertThat(encMaterials.keyPair).isEqualTo(fakePublicPrivateKey)
+        assertThat(encMaterials.keyPair.public).isEqualTo(null)
     }
 
     @Test
