@@ -91,7 +91,7 @@ class MaterialsResolver(conf: Configuration, private val s3: AmazonS3, cacheExpi
         logger.info("Got request for EncryptionMaterials with mode: ${materialsDescription["mode"]}, Key ID: $keyId")
         return when(materialsDescription["mode"]) {
             "doubleReuse" -> determineDoubleReuseEncryptionMaterials(keyId)
-            null -> throw RuntimeException("Encryption Materials Not Initialised")
+            //null -> throw RuntimeException("Encryption Materials Not Initialised")
             else -> determineDoubleEncryptionMaterialsForEncrypt()
         }
     }

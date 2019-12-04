@@ -98,11 +98,11 @@ class MaterialsResolverTest {
         assertThat(encryptionMaterials.materialsDescription["mode"]).isEqualTo("doubleReuse")
     }
 
-    @Test
+   /* @Test
     fun throwsExceptionWhenNullModeRequested() {
         assertThrows<RuntimeException>("Encryption Materials Not Initialised")
         { materialsResolver.getEncryptionMaterials(mutableMapOf(Pair("mode", null))) }
-    }
+    }*/
 
     @Test
     fun cacheWillExpungeKeyAfterExpiryTime() {
