@@ -98,6 +98,7 @@ class MaterialsResolverTest {
         assertThat(encryptionMaterials.materialsDescription["mode"]).isEqualTo("doubleReuse")
     }
 
+    //TODO Is it needed ? FIX THIS
    /* @Test
     fun throwsExceptionWhenNullModeRequested() {
         assertThrows<RuntimeException>("Encryption Materials Not Initialised")

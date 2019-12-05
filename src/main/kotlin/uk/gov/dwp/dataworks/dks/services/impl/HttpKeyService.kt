@@ -1,6 +1,5 @@
-package app.services.impl
+package uk.gov.dwp.dataworks.dks.services.impl
 
-import app.services.KeyService
 import com.google.gson.Gson
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.methods.HttpPost
@@ -10,7 +9,6 @@ import org.apache.http.util.EntityUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.context.annotation.Profile
 import org.springframework.retry.annotation.Backoff
 import org.springframework.retry.annotation.Retryable
 import org.springframework.stereotype.Service
@@ -18,13 +16,13 @@ import uk.gov.dwp.dataworks.dks.domain.DataKeyResult
 import uk.gov.dwp.dataworks.dks.exceptions.DataKeyDecryptionException
 import uk.gov.dwp.dataworks.dks.exceptions.DataKeyServiceUnavailableException
 import uk.gov.dwp.dataworks.dks.providers.HttpClientProvider
+import uk.gov.dwp.dataworks.dks.services.KeyService
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.URLEncoder
 
 @Service
-@Profile("httpDataKeyService")
-class HttpKeyService(private val httpClientProvider: HttpClientProvider) : KeyService {
+open class HttpKeyService(private val httpClientProvider: HttpClientProvider) : KeyService {
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(HttpKeyService::class.toString())
