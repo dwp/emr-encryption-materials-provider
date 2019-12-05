@@ -37,6 +37,9 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     //implementation 'org.bouncycastle:bcpkix-jdk15on:1.64'
+    implementation 'org.springframework.retry:spring-retry:1.2.4.RELEASE'
+    implementation 'org.springframework:spring-beans:5.1.9.RELEASE'
+    implementation 'org.springframework:spring-context:5.1.9.RELEASE'
 
     testImplementation("com.amazonaws:aws-java-sdk:1.11.567")
     testImplementation("org.apache.hadoop:hadoop-common:2.4.0")

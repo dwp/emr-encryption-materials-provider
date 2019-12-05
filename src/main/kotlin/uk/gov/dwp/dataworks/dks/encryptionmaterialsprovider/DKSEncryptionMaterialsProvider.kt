@@ -1,4 +1,4 @@
-package uk.gov.dwp.dataworks.encryptionmaterialsprovider
+package uk.gov.dwp.dataworks.dks.encryptionmaterialsprovider
 
 import com.amazonaws.services.s3.model.EncryptionMaterials
 import com.amazonaws.services.s3.model.EncryptionMaterialsProvider
