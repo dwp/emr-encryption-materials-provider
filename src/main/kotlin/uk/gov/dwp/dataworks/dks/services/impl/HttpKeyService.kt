@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.retry.annotation.Backoff
 import org.springframework.retry.annotation.Retryable
-import org.springframework.stereotype.Service
 import uk.gov.dwp.dataworks.dks.domain.DataKeyResult
 import uk.gov.dwp.dataworks.dks.exceptions.DataKeyDecryptionException
 import uk.gov.dwp.dataworks.dks.exceptions.DataKeyServiceUnavailableException
@@ -21,8 +20,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.URLEncoder
 
-@Service
-open class HttpKeyService(private val httpClientProvider: HttpClientProvider) : KeyService {
+open class HttpKeyService(private val httpClientProvider: HttpClientProvider, val dataKeyServiceUrl:String) : KeyService {
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(HttpKeyService::class.toString())
@@ -128,6 +126,4 @@ open class HttpKeyService(private val httpClientProvider: HttpClientProvider) : 
 
     private var decryptedKeyCache = mutableMapOf<String, String>()
 
-    @Value("\${data.key.service.url}")
-    private lateinit var dataKeyServiceUrl: String
 }

@@ -5,15 +5,13 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.ssl.SSLContexts
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Component
 import uk.gov.dwp.dataworks.dks.providers.HttpClientProvider
 import java.io.File
 import javax.net.ssl.SSLContext
 
+open class SecureHttpClientProvider(val identityStore:String,val identityStorePassword:String,val identityStoreAlias:String,
+                                    val identityKeyPassword:String,val trustStore:String, val trustStorePassword:String ) : HttpClientProvider {
 
-@Component
-open class SecureHttpClientProvider : HttpClientProvider {
 
     override fun client(): CloseableHttpClient =
         HttpClients.custom().run {
@@ -47,21 +45,4 @@ open class SecureHttpClientProvider : HttpClientProvider {
             build()
         }
 
-    @Value("\${identity.keystore}")
-    private lateinit var identityStore: String
-
-    @Value("\${identity.store.password}")
-    private lateinit var identityStorePassword: String
-
-    @Value("\${identity.store.alias}")
-    private lateinit var identityStoreAlias: String
-
-    @Value("\${identity.key.password}")
-    private lateinit var identityKeyPassword: String
-
-    @Value("\${trust.keystore}")
-    private lateinit var trustStore: String
-
-    @Value("\${trust.store.password}")
-    private lateinit var trustStorePassword: String
 }
