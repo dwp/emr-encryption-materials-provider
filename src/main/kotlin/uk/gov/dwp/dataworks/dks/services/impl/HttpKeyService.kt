@@ -8,9 +8,6 @@ import org.apache.http.entity.StringEntity
 import org.apache.http.util.EntityUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.retry.annotation.Backoff
-import org.springframework.retry.annotation.Retryable
 import uk.gov.dwp.dataworks.dks.domain.DataKeyResult
 import uk.gov.dwp.dataworks.dks.exceptions.DataKeyDecryptionException
 import uk.gov.dwp.dataworks.dks.exceptions.DataKeyServiceUnavailableException
@@ -31,11 +28,11 @@ open class HttpKeyService(private val httpClientProvider: HttpClientProvider, va
         const val backoffMultiplier = 2.0
     }
 
-    @Override
+ /*   @Override
     @Retryable(value = [DataKeyServiceUnavailableException::class],
         maxAttempts = maxAttempts,
         backoff = Backoff(delay = initialBackoffMillis, multiplier = backoffMultiplier))
-    @Throws(DataKeyServiceUnavailableException::class)
+    @Throws(DataKeyServiceUnavailableException::class)*/
     override fun batchDataKey(): DataKeyResult {
         try {
             val dksUrl = "$dataKeyServiceUrl/datakey"
@@ -69,11 +66,11 @@ open class HttpKeyService(private val httpClientProvider: HttpClientProvider, va
         }
     }
 
-    @Override
+  /*  @Override
     @Retryable(value = [DataKeyServiceUnavailableException::class],
         maxAttempts = maxAttempts,
         backoff = Backoff(delay = initialBackoffMillis, multiplier = backoffMultiplier))
-    @Throws(DataKeyServiceUnavailableException::class, DataKeyDecryptionException::class)
+    @Throws(DataKeyServiceUnavailableException::class, DataKeyDecryptionException::class)*/
     override fun decryptKey(encryptionKeyId: String, encryptedKey: String): String {
         logger.info("Decrypting encryptedKey: '$encryptedKey', keyEncryptionKeyId: '$encryptionKeyId'.")
         try {

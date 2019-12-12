@@ -28,6 +28,10 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
         this.configuration = conf
     }
 
+    init {
+        initializeKeyService()
+    }
+
     private fun initializeKeyService() {
         val values = getProperty()
         println("Values: $values")
@@ -48,9 +52,6 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
     override fun refresh() {}
 
     override fun getEncryptionMaterials(): EncryptionMaterials {
-        if(null!= keyService){
-            initializeKeyService()
-        }
         val dataKeyResult =  keyService.batchDataKey()
         val decodeKey = Base64.getDecoder().decode(dataKeyResult.plaintextDataKey)
         val secretKeySpec = SecretKeySpec(decodeKey, 0, decodeKey.size, "AES")
@@ -61,9 +62,6 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
     }
 
     override fun getEncryptionMaterials(materialsDescription: MutableMap<String, String>?): EncryptionMaterials {
-        if(null!= keyService){
-            initializeKeyService()
-        }
         val keyId = materialsDescription?.get("keyid")
         val encryptedDataKey = materialsDescription?.get("encryptedKey")
         if(null == keyId && null == encryptedDataKey){
