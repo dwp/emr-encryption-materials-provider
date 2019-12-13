@@ -9,8 +9,8 @@ import uk.gov.dwp.dataworks.dks.providers.HttpClientProvider
 import java.io.File
 import javax.net.ssl.SSLContext
 
-open class SecureHttpClientProvider(val identityStore:String,val identityStorePassword:String,val identityStoreAlias:String,
-                                    val identityKeyPassword:String,val trustStore:String, val trustStorePassword:String ) : HttpClientProvider {
+open class SecureHttpClientProvider(val identityStore: String, val identityStorePassword: String, val identityStoreAlias: String,
+                                    val identityKeyPassword: String, val trustStore: String, val trustStorePassword: String) : HttpClientProvider {
 
 
     override fun client(): CloseableHttpClient =

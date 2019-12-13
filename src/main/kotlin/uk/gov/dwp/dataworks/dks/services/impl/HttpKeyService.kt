@@ -17,22 +17,12 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.URLEncoder
 
-open class HttpKeyService(private val httpClientProvider: HttpClientProvider, val dataKeyServiceUrl:String) : KeyService {
+open class HttpKeyService(private val httpClientProvider: HttpClientProvider, val dataKeyServiceUrl: String) : KeyService {
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(HttpKeyService::class.toString())
-
-        // Will retry at 1s, 2s, 4s, 8s, 16s then give up (after a total of 31 secs)
-        const val maxAttempts = 5
-        const val initialBackoffMillis = 1000L
-        const val backoffMultiplier = 2.0
     }
 
- /*   @Override
-    @Retryable(value = [DataKeyServiceUnavailableException::class],
-        maxAttempts = maxAttempts,
-        backoff = Backoff(delay = initialBackoffMillis, multiplier = backoffMultiplier))
-    @Throws(DataKeyServiceUnavailableException::class)*/
     override fun batchDataKey(): DataKeyResult {
         try {
             val dksUrl = "$dataKeyServiceUrl/datakey"
@@ -57,7 +47,7 @@ open class HttpKeyService(private val httpClientProvider: HttpClientProvider, va
             }
         }
         catch (ex: Exception) {
-            when(ex) {
+            when (ex) {
                 is DataKeyServiceUnavailableException -> {
                     throw ex
                 }
@@ -66,11 +56,6 @@ open class HttpKeyService(private val httpClientProvider: HttpClientProvider, va
         }
     }
 
-  /*  @Override
-    @Retryable(value = [DataKeyServiceUnavailableException::class],
-        maxAttempts = maxAttempts,
-        backoff = Backoff(delay = initialBackoffMillis, multiplier = backoffMultiplier))
-    @Throws(DataKeyServiceUnavailableException::class, DataKeyDecryptionException::class)*/
     override fun decryptKey(encryptionKeyId: String, encryptedKey: String): String {
         logger.info("Decrypting encryptedKey: '$encryptedKey', keyEncryptionKeyId: '$encryptionKeyId'.")
         try {
@@ -108,7 +93,7 @@ open class HttpKeyService(private val httpClientProvider: HttpClientProvider, va
             }
         }
         catch (ex: Exception) {
-            when(ex) {
+            when (ex) {
                 is DataKeyDecryptionException, is DataKeyServiceUnavailableException -> {
                     throw ex
                 }

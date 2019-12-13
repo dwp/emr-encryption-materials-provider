@@ -16,8 +16,8 @@ class DWEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable 
     lateinit var configuration: Configuration
     private lateinit var materialsResolver: MaterialsResolver
     private val s3: AmazonS3 = AmazonS3ClientBuilder.standard()
-            .withRegion(Regions.EU_WEST_2)
-            .build()
+        .withRegion(Regions.EU_WEST_2)
+        .build()
 
     override fun getConf(): Configuration {
         return this.configuration

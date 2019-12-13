@@ -40,8 +40,8 @@ class MaterialsResolver(conf: Configuration, private val s3: AmazonS3, cacheExpi
     private val keyFactory = java.security.KeyFactory.getInstance("RSA")
 
     val clearKeyPairCache: Cache<String, KeyPair> = CacheBuilder.newBuilder()
-            .expireAfterWrite(Duration.ofSeconds(cacheExpirySeconds))
-            .build()
+        .expireAfterWrite(Duration.ofSeconds(cacheExpirySeconds))
+        .build()
 
     private lateinit var subsidiaryKeyPair: KeyPair
     lateinit var subsidiaryFilename: String
@@ -69,7 +69,7 @@ class MaterialsResolver(conf: Configuration, private val s3: AmazonS3, cacheExpi
     }
 
     private fun ensureConfigurationHasRequired(conf: Configuration) {
-        val notFound = requiredConfiguration.filter { conf.get(it) == null || conf.get(it).isEmpty()}
+        val notFound = requiredConfiguration.filter { conf.get(it) == null || conf.get(it).isEmpty() }
         check(notFound.isEmpty()) { "Required configuration items $notFound were not found or were empty" }
     }
 
@@ -89,7 +89,7 @@ class MaterialsResolver(conf: Configuration, private val s3: AmazonS3, cacheExpi
     fun getEncryptionMaterials(materialsDescription: MutableMap<String, String?>): EncryptionMaterials {
         val keyId: String = materialsDescription["keyid"] ?: "fdf11ee8-644d-4c2e-a9de-698af670a618"
         logger.info("Got request for EncryptionMaterials with mode: ${materialsDescription["mode"]}, Key ID: $keyId")
-        return when(materialsDescription["mode"]) {
+        return when (materialsDescription["mode"]) {
             "doubleReuse" -> determineDoubleReuseEncryptionMaterials(keyId)
             //null -> throw RuntimeException("Encryption Materials Not Initialised")
             else -> determineDoubleEncryptionMaterialsForEncrypt()
@@ -99,14 +99,14 @@ class MaterialsResolver(conf: Configuration, private val s3: AmazonS3, cacheExpi
     private fun determineDoubleReuseEncryptionMaterials(keyId: String): EncryptionMaterials {
         val decryptionKeyPair: KeyPair?
 
-        if(clearKeyPairCache.getIfPresent(keyId) != null) {
+        if (clearKeyPairCache.getIfPresent(keyId) != null) {
             logger.debug("Returning key with ID $keyId from in-memory cache")
             decryptionKeyPair = clearKeyPairCache.getIfPresent(keyId)
         }
         else {
             val subsidiaryKey = readFromS3(encryptionKeyPairsBucket, keyId)
             val keyPairSubsidiary: Map<String, String> = Gson()
-                    .fromJson(subsidiaryKey, object : TypeToken<HashMap<String, String>>() {}.type)
+                .fromJson(subsidiaryKey, object : TypeToken<HashMap<String, String>>() {}.type)
 
             val symEncryptedPrivKeyPair = Base64.getDecoder().decode(keyPairSubsidiary["priv"]?.toByteArray())
 
@@ -127,15 +127,15 @@ class MaterialsResolver(conf: Configuration, private val s3: AmazonS3, cacheExpi
     }
 
     private fun determineDoubleEncryptionMaterialsForEncrypt(): EncryptionMaterials {
-        if(!::subsidiaryFilename.isInitialized || LocalDateTime.now().isAfter(subsidiaryExpiry)) {
+        if (!::subsidiaryFilename.isInitialized || LocalDateTime.now().isAfter(subsidiaryExpiry)) {
             logger.info("$subsidiaryExpiry has passed, creating new subsidiary key pair")
             generateSubsidiaryKeyPair()
         }
 
         val secretKeyKeyPair = KeyPair(subsidiaryKeyPair.public, null)
         return EncryptionMaterials(secretKeyKeyPair)
-                .addDescription("mode", "doubleReuse")
-                .addDescription("keyid", subsidiaryFilename)
+            .addDescription("mode", "doubleReuse")
+            .addDescription("keyid", subsidiaryFilename)
     }
 
     private fun generateSubsidiaryKeyPair() {

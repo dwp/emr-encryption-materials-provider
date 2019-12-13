@@ -38,9 +38,6 @@ dependencies {
     implementation 'commons-io:commons-io:2.4'
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-    //implementation 'org.springframework.retry:spring-retry:1.2.4.RELEASE'
-    //implementation "org.springframework.boot:spring-boot-starter"
-    //implementation "org.springframework.boot:spring-boot-starter-aop"
 
     testImplementation("com.amazonaws:aws-java-sdk:1.11.567")
     testImplementation("org.apache.hadoop:hadoop-common:2.4.0")
@@ -51,7 +48,6 @@ dependencies {
     testImplementation("com.adobe.testing:s3mock-junit5:2.1.16")
     testRuntime('org.junit.jupiter:junit-jupiter-engine:5.3.1')
     testImplementation("org.mockito:mockito-core:2.21.0")
-    testImplementation('org.springframework.boot:spring-boot-starter-test')
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
