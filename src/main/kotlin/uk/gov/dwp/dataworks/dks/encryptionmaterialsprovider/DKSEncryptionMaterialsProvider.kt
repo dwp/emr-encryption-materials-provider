@@ -65,6 +65,24 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
     override fun refresh() {}
 
     override fun getEncryptionMaterials(): EncryptionMaterials {
+        throw UnsupportedOperationException("Secret Key pair is not initialised.")
+    }
+
+    override fun getEncryptionMaterials(materialsDescription: MutableMap<String, String>?): EncryptionMaterials {
+        val materialsDescriptionStr = materialsDescription?.entries?.map { "$it.key : ${it.value}" }?.joinToString("\n")
+        logger.info("Received materials description $materialsDescriptionStr")
+        val keyId = materialsDescription?.get(METADATA_KEYID)
+        val encryptedKey = materialsDescription?.get(METADATA_ENCRYPTED_KEY)
+        logger.info("Received keyId: '$keyId' and encryptedKey: '$encryptedKey' from materials description")
+        return if (null == keyId && null == encryptedKey) {
+            getMaterialForEncryption()
+        }
+        else {
+            getMaterialForDecryption(keyId, encryptedKey)
+        }
+    }
+
+    private fun getMaterialForEncryption(): EncryptionMaterials {
         logger.info("Calling DKS to generate key")
         val dataKeyResult = keyService.batchDataKey()
         val decodeKey = Base64.getDecoder().decode(dataKeyResult.plaintextDataKey)
@@ -78,33 +96,16 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
             .addDescription(METADATA_ENCRYPTED_KEY, cipherKey)
     }
 
-    override fun getEncryptionMaterials(materialsDescription: MutableMap<String, String>?): EncryptionMaterials {
-        val materialsDescriptionStr = materialsDescription?.entries?.map { "$it.key : ${it.value}" }?.joinToString("\n")
-        logger.info("Received materials description $materialsDescriptionStr")
-        val keyId = materialsDescription?.get(METADATA_KEYID)
-        val encryptedKey = materialsDescription?.get(METADATA_ENCRYPTED_KEY)
-        logger.info("Received keyId: '$keyId' and encryptedKey: '$encryptedKey' from materials description")
-        if (null == keyId && null == encryptedKey) {
-            logger.info("In the if of getEncryptionMaterials")
-            val dataKeyResult = keyService.batchDataKey()
-            val decodeKey = Base64.getDecoder().decode(dataKeyResult.plaintextDataKey)
-            val secretKeySpec = SecretKeySpec(decodeKey, 0, decodeKey.size, ALGORITHM)
-            return EncryptionMaterials(secretKeySpec)
-                .addDescription(METADATA_KEYID, dataKeyResult.dataKeyEncryptionKeyId)
-                .addDescription(METADATA_ENCRYPTED_KEY, dataKeyResult.ciphertextDataKey)
-        }
-        else {
-            logger.info("In the else of getEncryptionMaterials")
-            logger.info("Calling DKS to decrypt key")
-            val decryptedKey = keyService.decryptKey(keyId!!, encryptedKey!!)
-            val decodeKey = Base64.getDecoder().decode(decryptedKey)
-            val secretKeySpec = SecretKeySpec(decodeKey, 0, decodeKey.size, ALGORITHM)
-            logger.info("DKS decrypted key successfully!")
-            return EncryptionMaterials(secretKeySpec)
-        }
+    private fun getMaterialForDecryption(keyId: String?, encryptedKey: String?): EncryptionMaterials {
+        logger.info("Calling DKS to decrypt key")
+        val decryptedKey = keyService.decryptKey(keyId!!, encryptedKey!!)
+        val decodeKey = Base64.getDecoder().decode(decryptedKey)
+        val secretKeySpec = SecretKeySpec(decodeKey, 0, decodeKey.size, ALGORITHM)
+        logger.info("DKS decrypted key successfully!")
+        return EncryptionMaterials(secretKeySpec)
     }
 
-    fun getDKSProperties(): Map<String, String> {
+    private fun getDKSProperties(): Map<String, String> {
         val prop = Properties()
         try {
             val inputStream = FileInputStream(DKS_PROPERTIES_PATH)
