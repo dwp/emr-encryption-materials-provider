@@ -4,6 +4,8 @@ import com.amazonaws.services.s3.model.EncryptionMaterials
 import com.amazonaws.services.s3.model.EncryptionMaterialsProvider
 import org.apache.hadoop.conf.Configurable
 import org.apache.hadoop.conf.Configuration
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import uk.gov.dwp.dataworks.dks.providers.impl.SecureHttpClientProvider
 import uk.gov.dwp.dataworks.dks.services.KeyService
 import uk.gov.dwp.dataworks.dks.services.impl.HttpKeyService
@@ -16,7 +18,20 @@ import javax.crypto.spec.SecretKeySpec
  */
 class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable {
 
-    private lateinit var keyService: KeyService
+    private val IDENTITY_KEYSTORE = "identity.keystore"
+    private val IDENTITY_STORE_PWD = "identity.store.password"
+    private val IDENTITY_STORE_ALIAS = "identity.store.alias"
+    private val IDENTITY_KEY_PASSWORD = "identity.key.password"
+    private val TRUST_KEYSTORE = "trust.keystore"
+    private val TRUST_STORE_PASSWORD = "trust.store.password"
+    private val ALGORITHM = "AES"
+    private val METADATA_KEYID = "keyid"
+    private val METADATA_ENCRYPTED_KEY = "encryptedKey"
+
+    private val DATA_KEY_SERVICE_URL = "data.key.service.url"
+
+    private val DKS_PROPERTIES_PATH = "/opt/emr/dks.properties"
+    private val keyService: KeyService
 
     private lateinit var configuration: Configuration
 
@@ -26,22 +41,20 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
 
     override fun setConf(conf: Configuration) {
         this.configuration = conf
+        logger.info("Configuration received: $conf")
     }
 
     init {
-        initializeKeyService()
-    }
+        val dksValues = getDKSProperties()
+        val identityStore = dksValues[IDENTITY_KEYSTORE]
+        val identityStorePassword = dksValues[IDENTITY_STORE_PWD]
+        val identityStoreAlias = dksValues[IDENTITY_STORE_ALIAS]
+        val identityKeyPassword = dksValues[IDENTITY_KEY_PASSWORD]
+        val trustStore = dksValues[TRUST_KEYSTORE]
+        val trustStorePassword = dksValues[TRUST_STORE_PASSWORD]
+        val dataKeyServiceUrl = dksValues[DATA_KEY_SERVICE_URL]
 
-    private fun initializeKeyService() {
-        val values = getProperty()
-        println("Values: $values")
-        val identityStore = values["identity.keystore"]
-        val identityStorePassword = values["identity.store.password"]
-        val identityStoreAlias = values["identity.store.alias"]
-        val identityKeyPassword = values["identity.key.password"]
-        val trustStore = values["trust.keystore"]
-        val trustStorePassword = values["trust.store.password"]
-        val dataKeyServiceUrl = values["data.key.service.url"]
+        logger.info("DKS values: Identity store path '$identityStore', Trust store path '$trustStore', DKS url '$dataKeyServiceUrl'")
 
         val httpClientProvider = SecureHttpClientProvider(identityStore!!, identityStorePassword!!, identityStoreAlias!!, identityKeyPassword!!,
             trustStore!!, trustStorePassword!!)
@@ -52,58 +65,58 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
     override fun refresh() {}
 
     override fun getEncryptionMaterials(): EncryptionMaterials {
-        val dataKeyResult =  keyService.batchDataKey()
+        logger.info("Calling DKS to generate key")
+        val dataKeyResult = keyService.batchDataKey()
         val decodeKey = Base64.getDecoder().decode(dataKeyResult.plaintextDataKey)
-        val secretKeySpec = SecretKeySpec(decodeKey, 0, decodeKey.size, "AES")
-        println("secretKeySpecPub: $secretKeySpec")
+        val secretKeySpec = SecretKeySpec(decodeKey, 0, decodeKey.size, ALGORITHM)
+        logger.info("DKS generated key successfully!")
+        val keyId = dataKeyResult.dataKeyEncryptionKeyId
+        val cipherKey = dataKeyResult.ciphertextDataKey
+        logger.info("Adding key id '$keyId' and cipher key '$cipherKey' to the S3 metadata")
         return EncryptionMaterials(secretKeySpec)
-            .addDescription("keyid",dataKeyResult.dataKeyEncryptionKeyId)
-            .addDescription("encryptedKey",dataKeyResult.ciphertextDataKey)
+            .addDescription(METADATA_KEYID, keyId)
+            .addDescription(METADATA_ENCRYPTED_KEY, cipherKey)
     }
 
     override fun getEncryptionMaterials(materialsDescription: MutableMap<String, String>?): EncryptionMaterials {
-        val keyId = materialsDescription?.get("keyid")
-        val encryptedDataKey = materialsDescription?.get("encryptedKey")
-        if(null == keyId && null == encryptedDataKey){
-            val dataKeyResult =  keyService.batchDataKey()
-            println("key ${dataKeyResult.plaintextDataKey}")
-            println("id ${dataKeyResult.dataKeyEncryptionKeyId}")
-            println("ckey ${dataKeyResult.ciphertextDataKey}")
-
+        val materialsDescriptionStr = materialsDescription?.entries?.map { "$it.key : ${it.value}" }?.joinToString("\n")
+        logger.info("Received materials description $materialsDescriptionStr")
+        val keyId = materialsDescription?.get(METADATA_KEYID)
+        val encryptedKey = materialsDescription?.get(METADATA_ENCRYPTED_KEY)
+        logger.info("Received keyId: '$keyId' and encryptedKey: '$encryptedKey' from materials description")
+        if (null == keyId && null == encryptedKey) {
+            logger.info("In the if of getEncryptionMaterials")
+            val dataKeyResult = keyService.batchDataKey()
             val decodeKey = Base64.getDecoder().decode(dataKeyResult.plaintextDataKey)
-            val secretKeySpec = SecretKeySpec(decodeKey, 0, decodeKey.size, "AES")
-            println("secretKeySpec: $secretKeySpec")
-            val encryptionmaterials =  EncryptionMaterials(secretKeySpec)
-                .addDescription("keyid",dataKeyResult.dataKeyEncryptionKeyId)
-                .addDescription("encryptedKey",dataKeyResult.ciphertextDataKey)
-            println("encryptionmaterials: $encryptionmaterials")
-
-            return encryptionMaterials
-
+            val secretKeySpec = SecretKeySpec(decodeKey, 0, decodeKey.size, ALGORITHM)
+            return EncryptionMaterials(secretKeySpec)
+                .addDescription(METADATA_KEYID, dataKeyResult.dataKeyEncryptionKeyId)
+                .addDescription(METADATA_ENCRYPTED_KEY, dataKeyResult.ciphertextDataKey)
         }
         else {
-            val decryptedKey = keyService.decryptKey(keyId!!, encryptedDataKey!!)
+            logger.info("In the else of getEncryptionMaterials")
+            logger.info("Calling DKS to decrypt key")
+            val decryptedKey = keyService.decryptKey(keyId!!, encryptedKey!!)
             val decodeKey = Base64.getDecoder().decode(decryptedKey)
-            val secretKeySpec = SecretKeySpec(decodeKey, 0, decodeKey.size, "AES")
+            val secretKeySpec = SecretKeySpec(decodeKey, 0, decodeKey.size, ALGORITHM)
+            logger.info("DKS decrypted key successfully!")
             return EncryptionMaterials(secretKeySpec)
         }
     }
 
-    fun getProperty(): Map<String, String> {
+    fun getDKSProperties(): Map<String, String> {
         val prop = Properties()
-        val map = HashMap<String, String>()
         try {
-            val inputStream = FileInputStream("/opt/emr/dks.properties")
+            val inputStream = FileInputStream(DKS_PROPERTIES_PATH)
             prop.load(inputStream)
         }
         catch (e: Exception) {
-            e.printStackTrace()
-            println("Some issue finding or loading file....!!! " + e.message)
+            logger.error("Exception when loading DKS properties", e)
+        }
+        return prop.entries.map { it.key as String to it.value as String }.toMap()
+    }
 
-        }
-        for (entry in prop.entries) {
-            map[entry.key as String] = entry.value as String
-        }
-        return map
+    companion object {
+        val logger: Logger = LoggerFactory.getLogger(DKSEncryptionMaterialsProvider::class.toString())
     }
 }
