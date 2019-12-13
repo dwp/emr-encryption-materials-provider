@@ -26,12 +26,12 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
     private val TRUST_STORE_PASSWORD = "trust.store.password"
     private val ALGORITHM = "AES"
     private val METADATA_KEYID = "keyid"
-    private val METADATA_ENCRYPTED_KEY = "encryptedKey"
+    private val METADATA_ENCRYPTED_KEY = "encryptedkey"
 
     private val DATA_KEY_SERVICE_URL = "data.key.service.url"
 
     private val DKS_PROPERTIES_PATH = "/opt/emr/dks.properties"
-    private val keyService: KeyService
+    private lateinit var keyService: KeyService
 
     private lateinit var configuration: Configuration
 
@@ -42,9 +42,11 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
     override fun setConf(conf: Configuration) {
         this.configuration = conf
         logger.info("Configuration received: $conf")
+        val keyService = init()
+        initializeKeyservice(keyService)
     }
 
-    init {
+    private fun init(): KeyService {
         val dksValues = getDKSProperties()
         val identityStore = dksValues[IDENTITY_KEYSTORE]
         val identityStorePassword = dksValues[IDENTITY_STORE_PWD]
@@ -59,7 +61,11 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
         val httpClientProvider = SecureHttpClientProvider(identityStore!!, identityStorePassword!!, identityStoreAlias!!, identityKeyPassword!!,
             trustStore!!, trustStorePassword!!)
 
-        keyService = HttpKeyService(httpClientProvider, dataKeyServiceUrl!!)
+        return HttpKeyService(httpClientProvider, dataKeyServiceUrl!!)
+    }
+
+    fun initializeKeyservice(keyService: KeyService) {
+        this.keyService = keyService
     }
 
     override fun refresh() {}
