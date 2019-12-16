@@ -1,5 +1,7 @@
 package uk.gov.dwp.dataworks.dks.services.impl
 
+import com.google.common.cache.Cache
+import com.google.common.cache.CacheBuilder
 import com.google.gson.Gson
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.methods.HttpPost
@@ -16,6 +18,7 @@ import uk.gov.dwp.dataworks.dks.services.KeyService
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.URLEncoder
+import java.util.concurrent.TimeUnit
 
 open class HttpKeyService(private val httpClientProvider: HttpClientProvider, val dataKeyServiceUrl: String) : KeyService {
 
@@ -60,8 +63,8 @@ open class HttpKeyService(private val httpClientProvider: HttpClientProvider, va
         logger.info("Decrypting encryptedKey: '$encryptedKey', keyEncryptionKeyId: '$encryptionKeyId'.")
         try {
             val cacheKey = "$encryptedKey/$encryptionKeyId"
-            return if (decryptedKeyCache.containsKey(cacheKey)) {
-                decryptedKeyCache[cacheKey]!!
+            if (decryptedKeyCache.getIfPresent(cacheKey) != null) {
+                return decryptedKeyCache.getIfPresent(cacheKey)!!
             }
             else {
                 httpClientProvider.client().use { client ->
@@ -78,7 +81,7 @@ open class HttpKeyService(private val httpClientProvider: HttpClientProvider, va
                                 val text = BufferedReader(InputStreamReader(response.entity.content)).use(BufferedReader::readText)
                                 EntityUtils.consume(entity)
                                 val dataKeyResult = Gson().fromJson(text, DataKeyResult::class.java)
-                                decryptedKeyCache[cacheKey] = dataKeyResult.plaintextDataKey
+                                decryptedKeyCache.put(cacheKey, dataKeyResult.plaintextDataKey)
                                 dataKeyResult.plaintextDataKey
                             }
                             400 ->
@@ -103,9 +106,11 @@ open class HttpKeyService(private val httpClientProvider: HttpClientProvider, va
     }
 
     fun clearCache() {
-        this.decryptedKeyCache = mutableMapOf()
+        decryptedKeyCache.invalidateAll()
     }
 
-    private var decryptedKeyCache = mutableMapOf<String, String>()
+    val decryptedKeyCache: Cache<String, String> = CacheBuilder.newBuilder()
+        .expireAfterWrite(86400, TimeUnit.SECONDS)
+        .build()
 
 }

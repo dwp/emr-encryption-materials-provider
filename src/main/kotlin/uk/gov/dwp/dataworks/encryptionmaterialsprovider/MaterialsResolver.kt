@@ -34,7 +34,6 @@ import javax.crypto.spec.SecretKeySpec
  */
 class MaterialsResolver(conf: Configuration, private val s3: AmazonS3, cacheExpirySeconds: Long) {
 
-    //TODO Remove "fs.s3.cse.rsa.public" and "fs.s3.cse.rsa.public" when DKS real code added
     private val requiredConfiguration = setOf("fs.s3.cse.encr.keypairs.bucket", "fs.s3.cse.rsa.public", "fs.s3.cse.rsa.private")
     private val encryptionKeyPairsBucket: String
     private val keyFactory = java.security.KeyFactory.getInstance("RSA")

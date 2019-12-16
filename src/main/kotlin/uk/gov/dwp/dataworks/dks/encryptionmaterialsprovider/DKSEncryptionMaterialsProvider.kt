@@ -48,20 +48,20 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
 
     private fun init(): KeyService {
         val dksValues = getDKSProperties()
-        val identityStore = dksValues[IDENTITY_KEYSTORE]
-        val identityStorePassword = dksValues[IDENTITY_STORE_PWD]
-        val identityStoreAlias = dksValues[IDENTITY_STORE_ALIAS]
-        val identityKeyPassword = dksValues[IDENTITY_KEY_PASSWORD]
-        val trustStore = dksValues[TRUST_KEYSTORE]
-        val trustStorePassword = dksValues[TRUST_STORE_PASSWORD]
-        val dataKeyServiceUrl = dksValues[DATA_KEY_SERVICE_URL]
+        val identityStore = validateDKSProperty(dksValues[IDENTITY_KEYSTORE])
+        val identityStorePassword = validateDKSProperty(dksValues[IDENTITY_STORE_PWD])
+        val identityStoreAlias = validateDKSProperty(dksValues[IDENTITY_STORE_ALIAS])
+        val identityKeyPassword = validateDKSProperty(dksValues[IDENTITY_KEY_PASSWORD])
+        val trustStore = validateDKSProperty(dksValues[TRUST_KEYSTORE])
+        val trustStorePassword = validateDKSProperty(dksValues[TRUST_STORE_PASSWORD])
+        val dataKeyServiceUrl = validateDKSProperty(dksValues[DATA_KEY_SERVICE_URL])
 
         logger.info("DKS values: Identity store path '$identityStore', Trust store path '$trustStore', DKS url '$dataKeyServiceUrl'")
 
-        val httpClientProvider = SecureHttpClientProvider(identityStore!!, identityStorePassword!!, identityStoreAlias!!, identityKeyPassword!!,
-            trustStore!!, trustStorePassword!!)
+        val httpClientProvider = SecureHttpClientProvider(identityStore, identityStorePassword, identityStoreAlias, identityKeyPassword,
+            trustStore, trustStorePassword)
 
-        return HttpKeyService(httpClientProvider, dataKeyServiceUrl!!)
+        return HttpKeyService(httpClientProvider, dataKeyServiceUrl)
     }
 
     fun initializeKeyservice(keyService: KeyService) {
@@ -74,11 +74,11 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
         throw UnsupportedOperationException("Secret Key pair is not initialised.")
     }
 
-    override fun getEncryptionMaterials(materialsDescription: MutableMap<String, String>?): EncryptionMaterials {
-        val materialsDescriptionStr = materialsDescription?.entries?.map { "$it.key : ${it.value}" }?.joinToString("\n")
+    override fun getEncryptionMaterials(materialsDescription: MutableMap<String, String>): EncryptionMaterials {
+        val materialsDescriptionStr = materialsDescription.entries.joinToString("\n") { "$it.key : ${it.value}" }
         logger.info("Received materials description $materialsDescriptionStr")
-        val keyId = materialsDescription?.get(METADATA_KEYID)
-        val encryptedKey = materialsDescription?.get(METADATA_ENCRYPTED_KEY)
+        val keyId = materialsDescription[METADATA_KEYID]
+        val encryptedKey = materialsDescription[METADATA_ENCRYPTED_KEY]
         logger.info("Received keyId: '$keyId' and encryptedKey: '$encryptedKey' from materials description")
         return if (null == keyId && null == encryptedKey) {
             getMaterialForEncryption()
@@ -119,8 +119,14 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
         }
         catch (e: Exception) {
             logger.error("Exception when loading DKS properties", e)
+            throw e
         }
         return prop.entries.map { it.key as String to it.value as String }.toMap()
+    }
+
+    private fun  validateDKSProperty(property: String?): String{
+        if (property.isNullOrBlank()) throw IllegalArgumentException("$property cannot be null or blank")
+        return property
     }
 
     companion object {
