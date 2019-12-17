@@ -32,6 +32,7 @@ import javax.crypto.spec.SecretKeySpec
  * Note that this uses a temporary static public-private [KeyPair] to encrypt and decrypt until such time
  * as code is written to use the DKS service. See TODO articles in this code for what needs removing.
  */
+@Deprecated("Superseded by uk.gov.dwp.dataworks.dks.encryptionmaterialsprovider.DKSEncryptionMaterialsProvider")
 class MaterialsResolver(conf: Configuration, private val s3: AmazonS3, cacheExpirySeconds: Long) {
 
     private val requiredConfiguration = setOf("fs.s3.cse.encr.keypairs.bucket", "fs.s3.cse.rsa.public", "fs.s3.cse.rsa.private")

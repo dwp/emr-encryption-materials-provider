@@ -41,7 +41,7 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
 
     override fun setConf(conf: Configuration) {
         this.configuration = conf
-        logger.info("Configuration received: $conf")
+        logger.debug("Configuration received: $conf")
         val keyService = init()
         initializeKeyservice(keyService)
     }
@@ -56,7 +56,7 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
         val trustStorePassword = validateDKSProperty(dksValues[TRUST_STORE_PASSWORD])
         val dataKeyServiceUrl = validateDKSProperty(dksValues[DATA_KEY_SERVICE_URL])
 
-        logger.info("DKS values: Identity store path '$identityStore', Trust store path '$trustStore', DKS url '$dataKeyServiceUrl'")
+        logger.debug("DKS values: Identity store path '$identityStore', Trust store path '$trustStore', DKS url '$dataKeyServiceUrl'")
 
         val httpClientProvider = SecureHttpClientProvider(identityStore, identityStorePassword, identityStoreAlias, identityKeyPassword,
             trustStore, trustStorePassword)
@@ -76,7 +76,7 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
 
     override fun getEncryptionMaterials(materialsDescription: MutableMap<String, String>): EncryptionMaterials {
         val materialsDescriptionStr = materialsDescription.entries.joinToString("\n") { "$it.key : ${it.value}" }
-        logger.info("Received materials description $materialsDescriptionStr")
+        logger.debug("Received materials description $materialsDescriptionStr")
         val keyId = materialsDescription[METADATA_KEYID]
         val encryptedKey = materialsDescription[METADATA_ENCRYPTED_KEY]
         logger.info("Received keyId: '$keyId' and encryptedKey: '$encryptedKey' from materials description")
@@ -89,11 +89,11 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
     }
 
     private fun getMaterialForEncryption(): EncryptionMaterials {
-        logger.info("Calling DKS to generate key")
+        logger.debug("Calling DKS to generate key")
         val dataKeyResult = keyService.batchDataKey()
         val decodeKey = Base64.getDecoder().decode(dataKeyResult.plaintextDataKey)
         val secretKeySpec = SecretKeySpec(decodeKey, 0, decodeKey.size, ALGORITHM)
-        logger.info("DKS generated key successfully!")
+        logger.debug("DKS generated key successfully!")
         val keyId = dataKeyResult.dataKeyEncryptionKeyId
         val cipherKey = dataKeyResult.ciphertextDataKey
         logger.info("Adding key id '$keyId' and cipher key '$cipherKey' to the S3 metadata")
@@ -103,11 +103,11 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
     }
 
     private fun getMaterialForDecryption(keyId: String?, encryptedKey: String?): EncryptionMaterials {
-        logger.info("Calling DKS to decrypt key")
+        logger.debug("Calling DKS to decrypt key")
         val decryptedKey = keyService.decryptKey(keyId!!, encryptedKey!!)
         val decodeKey = Base64.getDecoder().decode(decryptedKey)
         val secretKeySpec = SecretKeySpec(decodeKey, 0, decodeKey.size, ALGORITHM)
-        logger.info("DKS decrypted key successfully!")
+        logger.debug("DKS decrypted key successfully!")
         return EncryptionMaterials(secretKeySpec)
     }
 
