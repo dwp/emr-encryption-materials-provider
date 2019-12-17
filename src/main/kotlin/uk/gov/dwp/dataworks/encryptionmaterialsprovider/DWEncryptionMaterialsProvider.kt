@@ -11,6 +11,7 @@ import org.apache.hadoop.conf.Configuration
 /**
  * Class to provide encryption materials to an EMR cluster using RSA key pair stored in S3 buckets.
  */
+@Deprecated("Superseded by uk.gov.dwp.dataworks.dks.encryptionmaterialsprovider.DKSEncryptionMaterialsProvider")
 class DWEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable {
 
     lateinit var configuration: Configuration

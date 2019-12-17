@@ -29,11 +29,11 @@ open class HttpKeyService(private val httpClientProvider: HttpClientProvider, va
     override fun batchDataKey(): DataKeyResult {
         try {
             val dksUrl = "$dataKeyServiceUrl/datakey"
-            logger.info("dataKeyServiceUrl: '$dksUrl'.")
+            logger.debug("dataKeyServiceUrl: '$dksUrl'.")
             httpClientProvider.client().use { client ->
                 client.execute(HttpGet(dksUrl)).use { response ->
                     val statusCode = response.statusLine.statusCode
-                    logger.info("dataKeyServiceUrl: '$dksUrl' returned status code '$statusCode'.")
+                    logger.debug("dataKeyServiceUrl: '$dksUrl' returned status code '$statusCode'.")
                     return if (statusCode == 201) {
                         val entity = response.entity
                         val result = BufferedReader(InputStreamReader(entity.content))
@@ -60,7 +60,7 @@ open class HttpKeyService(private val httpClientProvider: HttpClientProvider, va
     }
 
     override fun decryptKey(encryptionKeyId: String, encryptedKey: String): String {
-        logger.info("Decrypting encryptedKey: '$encryptedKey', keyEncryptionKeyId: '$encryptionKeyId'.")
+        logger.debug("Decrypting encryptedKey: '$encryptedKey', keyEncryptionKeyId: '$encryptionKeyId'.")
         try {
             val cacheKey = "$encryptedKey/$encryptionKeyId"
             if (decryptedKeyCache.getIfPresent(cacheKey) != null) {
@@ -69,12 +69,12 @@ open class HttpKeyService(private val httpClientProvider: HttpClientProvider, va
             else {
                 httpClientProvider.client().use { client ->
                     val dksUrl = """$dataKeyServiceUrl/datakey/actions/decrypt?keyId=${URLEncoder.encode(encryptionKeyId, "US-ASCII")}"""
-                    logger.info("Calling dataKeyServiceUrl: '$dksUrl'.")
+                    logger.debug("Calling dataKeyServiceUrl: '$dksUrl'.")
                     val httpPost = HttpPost(dksUrl)
                     httpPost.entity = StringEntity(encryptedKey, ContentType.TEXT_PLAIN)
                     client.execute(httpPost).use { response ->
                         val statusCode = response.statusLine.statusCode
-                        logger.info("dataKeyServiceUrl: '$dksUrl' returned status code '$statusCode'.")
+                        logger.debug("dataKeyServiceUrl: '$dksUrl' returned status code '$statusCode'.")
                         return when (statusCode) {
                             200 -> {
                                 val entity = response.entity
