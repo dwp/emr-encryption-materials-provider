@@ -32,10 +32,6 @@ dependencies {
     implementation "org.bouncycastle:bcprov-ext-jdk15on:1.62"
     implementation "org.apache.spark:spark-core_2.12:2.4.4"
     implementation "com.fasterxml.jackson.module:jackson-module-scala_2.12:2.10.2"
-    //implementation "org.apache.spark:spark-sql_2.12:2.4.4"
-   // implementation "com.fasterxml.jackson.core:jackson-core:2.4.4"
-    //implementation "com.fasterxml.jackson.core:jackson-databind:2.4.4"
-    //implementation "com.fasterxml.jackson.core:jackson-annotations:2.4.4"
 
     testImplementation("com.amazonaws:aws-java-sdk:1.11.567")
     //S3 Mock depends on different implementations of the excluded modules
@@ -44,7 +40,6 @@ dependencies {
         exclude(group : 'javax.servlet', module: 'servlet-api')
         exclude(group : 'org.mortbay.jetty', module: 'servlet-api')
     }
-    //testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.0")
     testImplementation("io.kotlintest:kotlintest-runner-junit5:3.3.2")
     testImplementation("org.assertj:assertj-core:3.12.2")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.3.1")

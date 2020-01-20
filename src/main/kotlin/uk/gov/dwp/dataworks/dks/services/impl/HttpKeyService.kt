@@ -42,14 +42,12 @@ open class HttpKeyService(private val httpClientProvider: HttpClientProvider, va
                             }
                         EntityUtils.consume(entity)
                         result
-                    }
-                    else {
+                    } else {
                         throw DataKeyServiceUnavailableException("data key service returned status code '$statusCode'.")
                     }
                 }
             }
-        }
-        catch (ex: Exception) {
+        } catch (ex: Exception) {
             when (ex) {
                 is DataKeyServiceUnavailableException -> {
                     throw ex
@@ -65,8 +63,7 @@ open class HttpKeyService(private val httpClientProvider: HttpClientProvider, va
             val cacheKey = "$encryptedKey/$encryptionKeyId"
             if (decryptedKeyCache.getIfPresent(cacheKey) != null) {
                 return decryptedKeyCache.getIfPresent(cacheKey)!!
-            }
-            else {
+            } else {
                 httpClientProvider.client().use { client ->
                     val dksUrl = """$dataKeyServiceUrl/datakey/actions/decrypt?keyId=${URLEncoder.encode(encryptionKeyId, "US-ASCII")}"""
                     logger.debug("Calling dataKeyServiceUrl: '$dksUrl'.")
@@ -94,8 +91,7 @@ open class HttpKeyService(private val httpClientProvider: HttpClientProvider, va
                     }
                 }
             }
-        }
-        catch (ex: Exception) {
+        } catch (ex: Exception) {
             when (ex) {
                 is DataKeyDecryptionException, is DataKeyServiceUnavailableException -> {
                     throw ex

@@ -30,7 +30,7 @@ object DKSDecryption {
         val summaries: List<S3ObjectSummary> = s3Client.listObjectsV2(bucketName, prefix).objectSummaries
         val summariesRdd = sc.parallelize(summaries)
         val decryptedRdd = decryptRdd(summariesRdd, region, bucketName)
-        return  decryptedRdd?.map { it.split("\n") }
+        return decryptedRdd?.map { it.split("\n") }
     }
 
     fun decryptRdd(summariesRdd: JavaRDD<S3ObjectSummary>, region: String, bucketName: String): JavaRDD<String>? {
@@ -49,12 +49,12 @@ object DKSDecryption {
     }
 
     fun getS3Client(region: String): AmazonS3 {
-        return  S3Client.amazonS3(region)
+        return S3Client.amazonS3(region)
     }
 
     fun getSparkContext(): JavaSparkContext {
         val conf = SparkConf().setAppName("s3-data-decryption").setMaster("local")
-            return JavaSparkContext(conf)
+        return JavaSparkContext(conf)
     }
 
     fun decrypt(metadata: ObjectMetadata, s3Object: S3Object): String {

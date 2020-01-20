@@ -9,7 +9,7 @@ import uk.gov.dwp.dataworks.dks.services.impl.HttpKeyService
 import java.io.FileInputStream
 import java.util.*
 
-object DKSClientImpl : DKSClient{
+object DKSClientImpl : DKSClient {
 
     private val IDENTITY_KEYSTORE = "identity.keystore"
     private val IDENTITY_STORE_PWD = "identity.store.password"
@@ -46,8 +46,7 @@ object DKSClientImpl : DKSClient{
         try {
             val inputStream = FileInputStream(DKS_PROPERTIES_PATH)
             prop.load(inputStream)
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             DKSEncryptionMaterialsProvider.logger.error("Exception when loading DKS properties", e)
             throw e
         }

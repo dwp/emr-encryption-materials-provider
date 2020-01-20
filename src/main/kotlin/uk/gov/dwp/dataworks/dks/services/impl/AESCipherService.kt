@@ -2,8 +2,6 @@ package app.services.impl
 
 import org.apache.commons.compress.compressors.CompressorStreamFactory
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import uk.gov.dwp.dataworks.dks.services.CipherService
 import java.io.BufferedReader
 import java.io.InputStream
@@ -16,7 +14,7 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 object AESCipherService : CipherService {
-    private const val  cipherAlgorithm: String = "AES/CTR/NoPadding"
+    private const val cipherAlgorithm: String = "AES/CTR/NoPadding"
 
     init {
         Security.addProvider(BouncyCastleProvider())

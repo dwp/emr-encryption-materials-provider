@@ -8,6 +8,7 @@ import com.amazonaws.services.s3.model.S3ObjectSummary
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
+import io.mockk.verify
 import org.junit.jupiter.api.Test
 import uk.gov.dwp.dataworks.dks.client.DKSClient
 
@@ -17,10 +18,9 @@ class DKSDecryptionTest {
     @Test
     fun testMain(){
         val array = arrayOf("bucket", "prefix", "eu-west-2")
-       // val conf = SparkConf().setAppName("s3-data-decryption-test").setMaster("local")
-       // val localSparkContext =  JavaSparkContext(conf)
         val dksDecryption = spyk(DKSDecryption)
         val mockS3Client : AmazonS3 = mockk()
+
         val objectSummary1 = S3ObjectSummary()
         objectSummary1.key = "key1"
         val objectSummary2 = S3ObjectSummary()
@@ -46,8 +46,6 @@ class DKSDecryptionTest {
         s3Object2.key = "key2"
         s3Object2.objectContent = S3ObjectInputStream("sampleText2".toByteArray().inputStream(), null)
 
-
-
         val summaries = mutableListOf<S3ObjectSummary>()
         summaries.add(objectSummary1)
         summaries.add(objectSummary2)
@@ -55,10 +53,9 @@ class DKSDecryptionTest {
         val mockDKSClient: DKSClient = mockk()
 
 
+        every { dksDecryption.getS3Client(array[2]) } returns  mockS3Client
         every { mockS3Client.listObjectsV2(array[0], array[1]).objectSummaries } returns summaries
 
-        every { dksDecryption.getS3Client(array[2]) } returns  mockS3Client
-        every { dksDecryption.getS3Client(array[2]) } returns  mockS3Client
         every { mockS3Client.getObjectMetadata(array[0], "key1") } returns objectMetadata1
         every { mockS3Client.getObjectMetadata(array[0], "key2") } returns objectMetadata2
 
@@ -68,8 +65,10 @@ class DKSDecryptionTest {
         every { dksDecryption.getDKSClient() } returns mockDKSClient
         every { mockDKSClient.decryptKey("", "") } returns ""
 
-       // every { dksDecryption.getSparkContext() } returns localSparkContext
-        dksDecryption.main(array)
+         dksDecryption.main(array)
+        verify(exactly = 1) {
+            mockS3Client.listObjectsV2(array[0], array[1])
+        }
 
     }
 }
