@@ -29,6 +29,7 @@ dependencies {
     implementation 'commons-io:commons-io:2.4'
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    implementation "org.bouncycastle:bcprov-ext-jdk15on:1.62"
     implementation "org.apache.spark:spark-core_2.12:2.4.4"
     implementation "org.apache.spark:spark-sql_2.12:2.4.4"
 
@@ -46,6 +47,7 @@ dependencies {
     testImplementation("com.adobe.testing:s3mock-junit5:2.1.16")
     testRuntime('org.junit.jupiter:junit-jupiter-engine:5.3.1')
     testImplementation("org.mockito:mockito-core:2.21.0")
+    testImplementation "io.mockk:mockk:1.9.2"
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
