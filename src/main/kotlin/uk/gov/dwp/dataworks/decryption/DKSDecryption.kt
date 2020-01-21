@@ -1,6 +1,5 @@
 package uk.gov.dwp.dataworks.decryption
 
-import app.services.impl.AESCipherService
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.ObjectMetadata
 import com.amazonaws.services.s3.model.S3Object
@@ -12,6 +11,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import uk.gov.dwp.dataworks.dks.client.DKSClient
 import uk.gov.dwp.dataworks.dks.client.DKSClientImpl
+import uk.gov.dwp.dataworks.dks.services.impl.AESCipherService
 import uk.gov.dwp.dataworks.s3.S3Client
 
 object DKSDecryption {

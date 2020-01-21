@@ -7,6 +7,7 @@ import com.amazonaws.services.s3.model.PutObjectRequest
 import org.apache.hadoop.conf.Configuration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
@@ -18,6 +19,7 @@ import javax.crypto.KeyGenerator
 
 
 @ExtendWith(S3MockExtension::class)
+@Disabled
 class MaterialsResolverTest {
 
     private val dummyBucket = "dummybucket"

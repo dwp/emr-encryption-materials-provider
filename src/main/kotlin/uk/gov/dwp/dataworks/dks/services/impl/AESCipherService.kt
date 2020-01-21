@@ -1,4 +1,4 @@
-package app.services.impl
+package uk.gov.dwp.dataworks.dks.services.impl
 
 import org.apache.commons.compress.compressors.CompressorStreamFactory
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -14,7 +14,7 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 object AESCipherService : CipherService {
-    private const val cipherAlgorithm: String = "AES/CTR/NoPadding"
+     const val cipherAlgorithm: String = "AES/CTR/NoPadding"
 
     init {
         Security.addProvider(BouncyCastleProvider())
@@ -23,7 +23,7 @@ object AESCipherService : CipherService {
     override fun decrypt(key: String, initializationVector: String, content: InputStream): String {
         val keySpec: Key = SecretKeySpec(Base64.getDecoder().decode(key), "AES")
         val cipher = Cipher.getInstance(cipherAlgorithm, "BC").apply {
-            init(Cipher.DECRYPT_MODE, keySpec, IvParameterSpec(Base64.getDecoder().decode(iv)))
+            init(Cipher.DECRYPT_MODE, keySpec, IvParameterSpec(Base64.getDecoder().decode(initializationVector)))
         }
 
         val decryptedStream = CipherInputStream(content, cipher)
