@@ -163,7 +163,3 @@ A suggested approach to achieving this is:
       * ```mode``` - "doubleReuse"
 
 Note: this suggestion is for preparing encrypted test data only - not a method for production use!
-
-## Write tests
-
-There are currently no unit tests of this code
