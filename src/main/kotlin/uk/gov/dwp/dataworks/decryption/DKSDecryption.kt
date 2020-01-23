@@ -64,7 +64,7 @@ object DKSDecryption {
         val datakeyEncryptionkeyId = metadata.userMetadata[DATAKEYENCRYPTIONID]
         val content = s3Object.objectContent
         val key = s3Object.key
-        logger.info("Metadata for the key $key :: iv: $iv cipherText: $cipherText dataencryptionkeid: $datakeyEncryptionkeyId")
+        logger.debug("Metadata for the key $key :: iv: $iv cipherText: $cipherText dataencryptionkeid: $datakeyEncryptionkeyId")
 
         logger.debug("Calling DKS to decrypt key")
         val dksClient = getDKSClient()

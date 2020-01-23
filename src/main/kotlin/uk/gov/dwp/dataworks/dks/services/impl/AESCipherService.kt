@@ -20,13 +20,13 @@ object AESCipherService : CipherService {
         Security.addProvider(BouncyCastleProvider())
     }
 
-    override fun decrypt(key: String, initializationVector: String, content: InputStream): String {
+    override fun decrypt(key: String, initializationVector: String, encrypted: InputStream): String {
         val keySpec: Key = SecretKeySpec(Base64.getDecoder().decode(key), "AES")
         val cipher = Cipher.getInstance(cipherAlgorithm, "BC").apply {
             init(Cipher.DECRYPT_MODE, keySpec, IvParameterSpec(Base64.getDecoder().decode(initializationVector)))
         }
 
-        val decryptedStream = CipherInputStream(content, cipher)
+        val decryptedStream = CipherInputStream(encrypted, cipher)
         val decompressedStream = CompressorStreamFactory().createCompressorInputStream(CompressorStreamFactory.BZIP2, decryptedStream)
         return decompressedStream.bufferedReader().use(BufferedReader::readText)
 

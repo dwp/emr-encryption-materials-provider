@@ -2,7 +2,6 @@ package uk.gov.dwp.dataworks.dks.client
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import uk.gov.dwp.dataworks.dks.encryptionmaterialsprovider.DKSEncryptionMaterialsProvider
 import uk.gov.dwp.dataworks.dks.providers.impl.SecureHttpClientProvider
 import uk.gov.dwp.dataworks.dks.services.KeyService
 import uk.gov.dwp.dataworks.dks.services.impl.HttpKeyService
@@ -47,7 +46,7 @@ object DKSClientImpl : DKSClient {
             val inputStream = FileInputStream(DKS_PROPERTIES_PATH)
             prop.load(inputStream)
         } catch (e: Exception) {
-            DKSEncryptionMaterialsProvider.logger.error("Exception when loading DKS properties", e)
+            logger.error("Exception when loading DKS properties", e)
             throw e
         }
         return prop.entries.map { it.key as String to it.value as String }.toMap()
