@@ -1,3 +1,18 @@
+# Raw file decryption in Pyspark vs Decrypt snapshot files inside EMRFS (DW-3239 vs DW-3234)
+EMRFS Encryption:
+1. EMRFS generates data key , encrypts the data with the generated data key 
+2. Encrypts the data key with KEK provided by custom encryption materials provider
+
+EMRFS Decryption:
+1. EMRFS decrypts the  encrypted data key in the S3 metadata with KEK provided by custom encryption materials provider
+2. Decrypts the data with the decrypted data key
+1. EMRFS expects the key encryption material(KEK) to decrypt the encrypted data key.
+
+This is not possible as the ingestion phase design doesn't not  let the master key material (private key) 
+leave cloud HSM. Moreover as output of HTME isn't encrypted by the EMRFS rather by HTME process , 
+EMRFS transparent  encryption/decryption cannot be leveraged to decrypt that data .
+
+
 # EMR Encryption Materials Provider
 
 An EMR Security Configuration plugin implementing transparent client-side encryption and decryption between EMR and data persisted in S3 (via EMRFS).
@@ -163,7 +178,3 @@ A suggested approach to achieving this is:
       * ```mode``` - "doubleReuse"
 
 Note: this suggestion is for preparing encrypted test data only - not a method for production use!
-
-## Write tests
-
-There are currently no unit tests of this code

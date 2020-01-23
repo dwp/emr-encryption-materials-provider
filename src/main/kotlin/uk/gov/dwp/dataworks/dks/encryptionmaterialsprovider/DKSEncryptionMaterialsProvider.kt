@@ -82,8 +82,7 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
         logger.info("Received keyId: '$keyId' and encryptedKey: '$encryptedKey' from materials description")
         return if (null == keyId && null == encryptedKey) {
             getMaterialForEncryption()
-        }
-        else {
+        } else {
             getMaterialForDecryption(keyId, encryptedKey)
         }
     }
@@ -116,15 +115,14 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
         try {
             val inputStream = FileInputStream(DKS_PROPERTIES_PATH)
             prop.load(inputStream)
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             logger.error("Exception when loading DKS properties", e)
             throw e
         }
         return prop.entries.map { it.key as String to it.value as String }.toMap()
     }
 
-    private fun  validateDKSProperty(property: String?): String{
+    private fun validateDKSProperty(property: String?): String {
         if (property.isNullOrBlank()) throw IllegalArgumentException("$property cannot be null or blank")
         return property
     }
