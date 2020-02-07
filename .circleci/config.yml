@@ -107,9 +107,6 @@
     build-and-deploy:
       jobs:
         - build
-        - integration-test:
-            requires:
-              - build
         - snyk-pr:
             requires:
               - build
