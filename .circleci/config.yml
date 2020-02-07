@@ -31,7 +31,7 @@
         # Download and cache dependencies
         - restore_cache:
             keys:
-              - v1-dependencies-{{ checksum "build.gradle.kts" }}
+              - v1-dependencies-{{ checksum "build.gradle" }}
               # fallback to using the latest cache if no exact match is found
               - v1-dependencies-
 
@@ -42,11 +42,11 @@
               [  -z "$LATEST_VERSION" ] && LATEST_VERSION="0.0.0"
               VERSION=$(echo $LATEST_VERSION | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
               sed -i s/version=.*/version=$VERSION/ gradle.properties
-              gradle build
+              gradlew build
         - save_cache:
             paths:
               - ~/.gradle
-            key: v1-dependencies-{{ checksum "build.gradle.kts" }}
+            key: v1-dependencies-{{ checksum "build.gradle" }}
 
         - run:
             name: mkdir for artifact
