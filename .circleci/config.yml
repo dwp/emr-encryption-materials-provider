@@ -38,7 +38,8 @@
         - run:
             name: run gradle
             command: |
-              LATEST_VERSION=$(curl --silent "https://api.github.com/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+              INFO=$(curl --silent "https://api.github.com/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/releases/latest")
+              LATEST_VERSION= $(echo INFO | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || true)
               [  -z "$LATEST_VERSION" ] && LATEST_VERSION="0.0.0"
               VERSION=$(echo $LATEST_VERSION | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
               sed -i s/version=.*/version=$VERSION/ gradle.properties
@@ -66,7 +67,7 @@
         - snyk/scan:
             organization: dwp-dataworks
             severity-threshold: high
-            target-file: build.gradle.kts
+            target-file: build.gradle
             project: '${CIRCLE_PROJECT_REPONAME}/pr-kotlin'
 
     snyk-master:
@@ -77,7 +78,7 @@
         - snyk/scan:
             organization: dwp-dataworks
             severity-threshold: high
-            target-file: build.gradle.kts
+            target-file: build.gradle
             project: '${CIRCLE_PROJECT_REPONAME}/master-kotlin'
 
 
@@ -93,7 +94,8 @@
               set -u
               set -o pipefail
               ls -l ./artifacts
-              LATEST_VERSION=$(curl --silent "https://api.github.com/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+              INFO=$(curl --silent "https://api.github.com/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/releases/latest")
+              LATEST_VERSION= $(echo INFO | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || true)
               [  -z "$LATEST_VERSION" ] && LATEST_VERSION="0.0.0"
               VERSION=$(echo $LATEST_VERSION | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
               ghr \
