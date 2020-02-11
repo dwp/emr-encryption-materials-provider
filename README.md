@@ -27,8 +27,13 @@ An EMR Security Configuration plugin implementing transparent client-side encryp
 Gradle will fetch required packages and action all of the building. You can start the process by using the gradle wrapper
 
 ```bash
-./gradlew build
+./gradlew build shadow
 ```
+Note that the shadow jar includes the Kotlin standard library in the resultant file.
+
+### Snyk Issues
+There are some issues flagged by Snyk, however they are in libraries we link to in EMR, and hence cannot be directly upgraded.
+
 ## Runtime
 * Java 8 JRE 
 * AWS EMR (within Security Configuration) in the same VPC or VPC that can peer to DKS VPC 
@@ -36,12 +41,12 @@ Gradle will fetch required packages and action all of the building. You can star
 
 ## Infrastructure 
 * AWS S3 bucket to store the jar file
-  * named ```<s3-BUCKET>/EncryptionMaterialsProvider-1.0-SNAPSHOT.jar```
+  * named ```<s3-BUCKET>/EncryptionMaterialsProvider-$Version.jar```
 * EMR Security Configuration
   * At-rest encryption for Amazon S3 with EMRFS: ```Enabled```
   * S3 encryption
     * Encryption mode ```CSE-Custom```
-    * Custom key provider location ```s3://<S3-BUCKET>/EncryptionMaterialsProvider-1.0-SNAPSHOT.jar```
+    * Custom key provider location ```s3://<S3-BUCKET>/EncryptionMaterialsProvider-$Version.jar```
     * Key provider class ```uk.gov.dwp.dataworks.dks.encryptionmaterialsprovider.DKSEncryptionMaterialsProvider```
   * At-rest encryption for local disk: ```Enabled```
   * Local disk encryption
