@@ -1,0 +1,41 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.13.5
+# ignores vulnerabilities until expiry date; change duration by modifying expiry date
+ignore:
+  SNYK-JAVA-IONETTY-543490:
+    - '*':
+        reason: Part of aws-java-sdk@1.11.682 which is tied to EMR 5.29
+        expires: 2020-05-11T00:00:00.000Z
+  SNYK-JAVA-IONETTY-543669:
+    - '*':
+        reason: Part of aws-java-sdk@1.11.682 which is tied to EMR 5.29
+        expires: 2020-05-11T00:00:00.000Z
+  SNYK-JAVA-COMGOOGLEPROTOBUF-173761:
+    - '*':
+        reason: Part of hadoop-common@2.8.5-amzn-5 which is tied to EMR 5.29
+        expires: 2020-05-11T00:00:00.000Z
+  SNYK-JAVA-ORGAPACHEHADOOP-30630:
+    - '*':
+        reason: No direct upgrade or patch
+        expires: 2020-05-11T00:00:00.000Z
+  SNYK-JAVA-ORGAPACHEHADOOP-31400:
+    - '*':
+        reason: No direct upgrade or patch
+        expires: 2020-05-11T00:00:00.000Z
+  SNYK-JAVA-ORGAPACHEHADOOP-32124:
+    - '*':
+        reason: No direct upgrade or patch
+        expires: 2020-05-11T00:00:00.000Z
+  SNYK-JAVA-ORGAPACHEHADOOP-72665:
+    - '*':
+        reason: No direct upgrade or patch
+        expires: 2020-05-11T00:00:00.000Z
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-542935:
+    - '*':
+        reason: No direct upgrade or patch
+        expires: 2020-05-11T00:00:00.000Z
+  SNYK-JAVA-XERCES-31585:
+    - '*':
+        reason: No direct upgrade or patch
+        expires: 2020-05-11T00:00:00.000Z
+patch: {}
