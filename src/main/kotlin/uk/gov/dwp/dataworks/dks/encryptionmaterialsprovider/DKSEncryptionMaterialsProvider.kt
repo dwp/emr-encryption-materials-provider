@@ -74,7 +74,11 @@ class DKSEncryptionMaterialsProvider : EncryptionMaterialsProvider, Configurable
         throw UnsupportedOperationException("Secret Key pair is not initialised.")
     }
 
-    override fun getEncryptionMaterials(materialsDescription: MutableMap<String, String>): EncryptionMaterials {
+    override fun getEncryptionMaterials(materialsDescription: MutableMap<String, String?>?): EncryptionMaterials? {
+        if (materialsDescription == null) {
+            logger.info("Received null materials, using default");
+            return getMaterialForEncryption();
+        }
         val materialsDescriptionStr = materialsDescription.entries.joinToString("\n") { "$it.key : ${it.value}" }
         logger.debug("Received materials description $materialsDescriptionStr")
         val keyId = materialsDescription[METADATA_KEYID]

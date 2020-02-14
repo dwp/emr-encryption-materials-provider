@@ -20,7 +20,7 @@ class DKSEncryptionMaterialsProviderTest {
         given(keyService.batchDataKey()).willReturn(dataKeyResult)
         val dksEncryptionMaterialsProvider = DKSEncryptionMaterialsProvider()
         dksEncryptionMaterialsProvider.initializeKeyservice(keyService)
-        val map = mutableMapOf<String, String>()
+        val map = mutableMapOf<String, String?>()
         dksEncryptionMaterialsProvider.getEncryptionMaterials(map)
         then(keyService).should(Mockito.times(1)).batchDataKey()
     }
@@ -33,7 +33,7 @@ class DKSEncryptionMaterialsProviderTest {
         given(keyService.decryptKey(keyId, encryptedKey)).willReturn("plainTextKey")
         val dksEncryptionMaterialsProvider = DKSEncryptionMaterialsProvider()
         dksEncryptionMaterialsProvider.initializeKeyservice(keyService)
-        val map = mutableMapOf<String, String>()
+        val map = mutableMapOf<String, String?>()
         map.put("keyid",keyId)
         map.put("encryptedkey",encryptedKey)
         dksEncryptionMaterialsProvider.getEncryptionMaterials(map)
