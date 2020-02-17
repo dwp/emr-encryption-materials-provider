@@ -38,9 +38,8 @@
         - run:
             name: run gradle
             command: |
-              INFO=$(curl --silent "https://api.github.com/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/releases/latest")
-              LATEST_VERSION= $(echo INFO | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || true)
-              [  -z "$LATEST_VERSION" ] && LATEST_VERSION="0.0.0"
+              LATEST_VERSION=$(curl --silent "https://api.github.com/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/releases/latest" | grep '"tag_name":' | sed -E -e 's/.*": "([^"]+)".*/\1/' || true)
+              [ -z "$LATEST_VERSION" ] && LATEST_VERSION="0.0.0"
               VERSION=$(echo $LATEST_VERSION | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
               sed -i s/version=.*/version=$VERSION/ gradle.properties
               ./gradlew build shadow
@@ -94,9 +93,8 @@
               set -u
               set -o pipefail
               ls -l ./artifacts
-              INFO=$(curl --silent "https://api.github.com/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/releases/latest")
-              LATEST_VERSION= $(echo INFO | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || true)
-              [  -z "$LATEST_VERSION" ] && LATEST_VERSION="0.0.0"
+              LATEST_VERSION=$(curl --silent "https://api.github.com/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/releases/latest" | grep '"tag_name":' | sed -E -e 's/.*": "([^"]+)".*/\1/' || true)
+              [ -z "$LATEST_VERSION" ] && LATEST_VERSION="0.0.0"
               VERSION=$(echo $LATEST_VERSION | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
               ghr \
                 -t ${GITHUB_TOKEN} \
