@@ -5,9 +5,6 @@ spruce:
     merge:
       - with_in: ci/
         regexp: ".*yml"
-        except:
-          - credentials.yml.example
-          - credentials.yml
       - with_in: ci/jobs/
     to: aviator_pipeline.yml
 fly:
