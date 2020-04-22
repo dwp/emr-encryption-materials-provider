@@ -119,6 +119,12 @@ A suggested approach to achieving this is:
     ```
     df2 = spark.read.parquet("s3://<BUCKET_URI>/<PREFIX>/0001.parquet") 
     df2.show()```
+# Jar upload to s3 bucket via mirror job
+
+publish-github-release task in .circleci/config.yml  generates two types of jar assets in https://github.com/dwp/emr-encryption-materials-provider/releases out of which encryption-materials-provider-xxx-all.jar is a uber/fat jar
+that is uploaded to s3 artefact bucket via mirror-job.yml which is used in security configuration of emr clusters for transparent encryption.
+
+  
 
 
 
