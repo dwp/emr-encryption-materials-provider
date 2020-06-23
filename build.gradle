@@ -28,7 +28,7 @@ dependencies {
     //implementation 'com.google.code.gson:gson:2.8.5'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}"
     implementation "org.bouncycastle:bcprov-ext-jdk15on:${bouncycastleVersion}"
-    shadow "org.apache.spark:spark-core_4.1.44:${sparkcoreVersion}"
+    shadow "org.apache.spark:spark-core_3.0.0:${sparkcoreVersion}"
     shadow "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}"
 
     testImplementation("com.amazonaws:aws-java-sdk:${awsSDKVersion}")
@@ -45,7 +45,7 @@ dependencies {
     testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.3.1')
     testImplementation("org.mockito:mockito-core:2.21.0")
     testImplementation "io.mockk:mockk:1.9.3"
-    testImplementation "org.apache.spark:spark-core_4.1.44:${sparkcoreVersion}"
+    testImplementation "org.apache.spark:spark-core_3.0.0:${sparkcoreVersion}"
     testImplementation "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}"
 }
 
