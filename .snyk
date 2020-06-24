@@ -22,7 +22,7 @@ ignore:
     - '*':
         reason: No direct upgrade or patch
         expires: 2020-08-31T00:00:00.000Z
-  SNYK-JAVA-ORGSPRINGFRAMEWORK-542935:
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-559346:
     - '*':
         reason: No direct upgrade or patch
         expires: 2020-08-31T00:00:00.000Z
