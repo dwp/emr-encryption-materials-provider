@@ -6,18 +6,18 @@ ignore:
     - '*':
         reason: Part of aws-java-sdk@1.11.759 which is tied to EMR 5.30
         expires: 2020-08-31T00:00:00.000Z
-  SNYK-JAVA-IONETTY-543669:
+  SNYK-JAVA-IONETTY-564897:
     - '*':
-        reason: Part of aws-java-sdk@1.11.682 which is tied to EMR 5.29
-        expires: 2020-05-11T00:00:00.000Z
+        reason: Part of aws-java-sdk@1.11.759 which is tied to EMR 5.30
+        expires: 2020-08-31T00:00:00.000Z
   SNYK-JAVA-COMGOOGLEPROTOBUF-173761:
     - '*':
-        reason: Part of hadoop-common@2.8.5-amzn-5 which is tied to EMR 5.29
+        reason: Part of hadoop-common@2.8.5-amzn-5 which is tied to EMR 5.30
         expires: 2020-08-31T00:00:00.000Z
-  SNYK-JAVA-ORGAPACHEHADOOP-30630:
+  SNYK-JAVA-LOG4J-572732:
     - '*':
         reason: No direct upgrade or patch
-        expires: 2020-05-11T00:00:00.000Z
+        expires: 2020-08-31T00:00:00.000Z
   SNYK-JAVA-ORGAPACHEHADOOP-31400:
     - '*':
         reason: No direct upgrade or patch
