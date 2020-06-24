@@ -1,0 +1,145 @@
+jobs:
+- name: mirror-emr-encryption-materials-provider
+  plan:
+  - get: aws-management-infrastructure
+  - get: emr-encryption-materials-provider
+    params:
+      globs:
+      - '*all.jar'
+    trigger: true
+  - config:
+      image_resource:
+        source:
+          repository: ((terraform.repository))
+          tag: ((terraform12.version))
+          version: ((terraform12.version))
+        type: docker-image
+      inputs:
+      - name: aws-management-infrastructure
+      outputs:
+      - name: bucket_name
+      params:
+        AWS_ACCESS_KEY_ID: ((ci.aws_access_key_id))
+        AWS_SECRET_ACCESS_KEY: ((ci.aws_secret_access_key))
+        TF_CLI_ARGS_apply: -lock-timeout=300s
+        TF_CLI_ARGS_plan: -lock-timeout=300s
+        TF_INPUT: false
+        TF_VAR_slack_webhook_url: ((slack.webhook_url))
+        TF_WORKSPACE: management
+      platform: linux
+      run:
+        args:
+        - -exc
+        - |
+          terraform init
+          terraform workspace show
+          terraform output artefact_bucket | grep "\"id\" = " | awk '{print $3}' | sed 's/"//g' > ../bucket_name/bucket_name
+        dir: aws-management-infrastructure
+        path: sh
+    task: terraform-output
+  - config:
+      image_resource:
+        source:
+          repository: ((docker-awscli.repository))
+          tag: ((docker-awscli.version))
+          version: ((docker-awscli.version))
+        type: docker-image
+      outputs:
+      - name: .aws
+      params:
+        AWS_ACCESS_KEY_ID: ((ci.aws_access_key_id))
+        AWS_CONFIG_FILE: .aws-init/config
+        AWS_REGION: eu-west-2
+        AWS_SECRET_ACCESS_KEY: ((ci.aws_secret_access_key))
+        AWS_SHARED_CREDENTIALS_FILE: .aws-init/credentials
+      platform: linux
+      run:
+        args:
+        - -exc
+        - |
+          export AWS_DEFAULT_PROFILE=default
+          mkdir .aws-init
+          cat <<EOF> ${AWS_SHARED_CREDENTIALS_FILE}
+          [default]
+          aws_access_key_id = ${AWS_ACCESS_KEY_ID}
+          aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+          region = ${AWS_REGION}
+          EOF
+          cat <<EOF> ${AWS_CONFIG_FILE}
+          [default]
+          region = ${AWS_REGION}
+          EOF
+
+          export AWS_ACC=`aws ssm get-parameter --name terraform_bootstrap_config | jq -r '.Parameter.Value' | grep state_file_account | awk '{print $2}'`
+          export AWS_PROFILE=ci
+          cat <<EOF> .aws/credentials
+          [default]
+          aws_access_key_id = ${AWS_ACCESS_KEY_ID}
+          aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+          [${AWS_PROFILE}]
+          role_arn = arn:aws:iam::${AWS_ACC}:role/${AWS_PROFILE}
+          source_profile = default
+          EOF
+          cat <<EOF> .aws/config
+          [default]
+          region = ${AWS_REGION}
+          [profile ${AWS_PROFILE}]
+          region = ${AWS_REGION}
+          s3 =
+            max_concurrent_requests = 5
+            signature_version = s3v4
+            addressing_style = virtual
+          EOF
+        path: sh
+    task: create-aws-profiles
+  - config:
+      image_resource:
+        source:
+          repository: ((docker-awscli.repository))
+          tag: ((docker-awscli.version))
+          version: ((docker-awscli.version))
+        type: docker-image
+      inputs:
+      - name: bucket_name
+      - name: .aws
+      - name: emr-encryption-materials-provider
+      params:
+        ARTEFACT_DIR: emr-encryption-materials-provider
+        AWS_CONFIG_FILE: .aws/config
+        AWS_PROFILE: ci
+        AWS_SHARED_CREDENTIALS_FILE: .aws/credentials
+      platform: linux
+      run:
+        args:
+        - -exc
+        - |
+          AWS_SHARED_CREDENTIALS_FILE="${PWD}/${AWS_SHARED_CREDENTIALS_FILE}"
+          AWS_CONFIG_FILE="${PWD}/${AWS_CONFIG_FILE}"
+          export BUCKET=`cat bucket_name/bucket_name`
+          aws s3 cp ${ARTEFACT_DIR}/*.jar s3://${BUCKET}/${ARTEFACT_DIR}/encryption-materials-provider-all.jar
+          export VERSION=`echo ${ARTEFACT_DIR}/encryption-materials-provider*.jar | sed "s/^${ARTEFACT_DIR}\/encryption-materials-provider-\(.*\)-all.jar$/\1/"`
+          export VERSION_NUMBER="\"${VERSION}\""
+          echo $VERSION_NUMBER
+          export TAG="{\"TagSet\":[{\"Key\":\"version\",\"Value\":${VERSION_NUMBER}}]}"
+          aws s3api put-object-tagging \
+          --bucket ${BUCKET} \
+          --key ${ARTEFACT_DIR}/encryption-materials-provider-all.jar \
+          --tagging $TAG
+        path: sh
+    task: mirror-emr-encryption-materials-provider
+resources:
+- check_every: 720h
+  name: aws-management-infrastructure
+  source:
+    branch: master
+    private_key: ((svc-dip.private_key))
+    uri: git@github.ucds.io:dip/aws-management-infrastructure.git
+  type: git
+  webhook_token: ((ucfs-github.webhook-token))
+- check_every: 3m
+  name: emr-encryption-materials-provider
+  source:
+    access_token: ((github_com.token))
+    owner: dwp
+    repository: emr-encryption-materials-provider
+  type: github-release

@@ -68,7 +68,7 @@
             severity-threshold: high
             target-file: build.gradle
             project: '${CIRCLE_PROJECT_REPONAME}/pr-kotlin'
-            additional-arguments: '-prune-repeated-subdependencies'
+            additional-arguments: '--prune-repeated-subdependencies'
 
     snyk-master:
       docker:
@@ -80,7 +80,7 @@
             severity-threshold: high
             target-file: build.gradle
             project: '${CIRCLE_PROJECT_REPONAME}/master-kotlin'
-            additional-arguments: '-prune-repeated-subdependencies'
+            additional-arguments: '--prune-repeated-subdependencies'
 
 
     publish-github-release:
