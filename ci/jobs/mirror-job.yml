@@ -41,5 +41,13 @@ jobs:
                 AWS_SHARED_CREDENTIALS_FILE="${PWD}/${AWS_SHARED_CREDENTIALS_FILE}"
                 AWS_CONFIG_FILE="${PWD}/${AWS_CONFIG_FILE}"
                 export BUCKET=`cat bucket_name/bucket_name`
-                aws s3 cp ${ARTEFACT_DIR}/*.jar s3://${BUCKET}/${ARTEFACT_DIR}/
+                aws s3 cp ${ARTEFACT_DIR}/*.jar s3://${BUCKET}/${ARTEFACT_DIR}/encryption-materials-provider-all.jar
+                export VERSION=`echo ${ARTEFACT_DIR}/encryption-materials-provider*.jar | sed "s/^${ARTEFACT_DIR}\/encryption-materials-provider-\(.*\)-all.jar$/\1/"`
+                export VERSION_NUMBER="\"${VERSION}\""
+                echo $VERSION_NUMBER
+                export TAG="{\"TagSet\":[{\"Key\":\"version\",\"Value\":${VERSION_NUMBER}}]}"
+                aws s3api put-object-tagging \
+                --bucket ${BUCKET} \
+                --key ${ARTEFACT_DIR}/encryption-materials-provider-all.jar \
+                --tagging $TAG
 
