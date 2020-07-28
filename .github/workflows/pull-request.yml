@@ -1,0 +1,27 @@
+name: 'Pull Request'
+on:
+  pull_request:
+    branches:
+      - master
+env:
+  IMAGE_NAME: dwpdigital/emr-encryption-materials-provider
+
+jobs:
+  pull_request:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: build-docker-image
+        run: ./gradlew clean build
+
+      - name: snyk-scan
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: ${{ env.IMAGE_NAME }}
+          args: --file=./docker/Dockerfile --policy-path=./.snyk --severity-threshold=high --exclude-base-image-vulns --org=dwp-dataworks
