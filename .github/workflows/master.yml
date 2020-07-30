@@ -1,0 +1,103 @@
+name: Build and Push
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  REPO_NAME: dwp/emr-encryption-materials-provider
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      publish-version: ${{ steps.build.outputs.publish-version }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: build
+        run: |
+          LATEST_VERSION=$(curl --silent "https://api.github.com/repos/${env.REPO_NAME}/releases/latest" | grep '"tag_name":' | sed -E -e 's/.*": "([^"]+)".*/\1/' || true)
+          [ -z "$LATEST_VERSION" ] && LATEST_VERSION="0.0.0"
+          VERSION=$(echo $LATEST_VERSION | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
+          sed -i 's/version=.*/version=$VERSION/' gradle.properties
+          echo "::set-output name=publish-version::${VERSION}"
+          ./gradlew build shadow
+
+      - name: notify-slack
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,commit,author,workflow
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+        if: ${{ failure() }}
+
+      - name: upload-jar-artifact
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: artifacts
+          path: build/libs/*.jar
+
+  snyk-monitor:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: snyk-monitoring
+        uses: snyk/actions/gradle@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --org=dwp-dataworks
+
+  publish-github-release:
+    runs-on: ubuntu-latest
+    needs: snyk-monitor
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: download-jar-artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: artifacts
+          path: ../
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.build.outputs.publish-version }}
+          release_name: Release ${{ needs.build.outputs.publish-version }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+          id: upload-release-asset
+          uses: svenstaro/upload-release-action@v2
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            repo_token: ${{ secrets.GITHUB_TOKEN }}
+            file: ../encryption-materials-provider-*.jar
+            tag: ${{ github.ref }}
+            overwrite: true
+            file_glob: true
+
+      - name: notify-slack
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,commit,author,workflow
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+        if: ${{ failure() }}
