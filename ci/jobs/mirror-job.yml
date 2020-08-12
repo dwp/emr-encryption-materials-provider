@@ -14,32 +14,30 @@ jobs:
           globs:
             - "*all.jar"
       - .: (( inject meta.plan.terraform-output ))
-      - .: (( inject meta.plan.create-aws-profiles ))
       - task: mirror-emr-encryption-materials-provider
         config:
           platform: linux
           image_resource:
             type: docker-image
             source:
-              repository: ((docker-awscli.repository))
-              version: ((docker-awscli.version))
-              tag: ((docker-awscli.version))
+              repository: ((dataworks.docker_awscli_repository))
+              version: ((dataworks.docker_awscli_version))
+              tag: ((dataworks.docker_awscli_version))
           inputs:
             - name: bucket_name
-            - name: .aws
             - name: emr-encryption-materials-provider
           params:
-            AWS_PROFILE: ci
-            AWS_SHARED_CREDENTIALS_FILE: .aws/credentials
-            AWS_CONFIG_FILE: .aws/config
             ARTEFACT_DIR: "emr-encryption-materials-provider"
+            AWS_ROLE_ARN: arn:aws:iam::((aws_account.management)):role/ci
+            AWS_REGION: ((dataworks.aws_region))
+            AWS_DEFAULT_REGION: ((dataworks.aws_region))
           run:
             path: sh
             args:
               - -exc
               - |
-                AWS_SHARED_CREDENTIALS_FILE="${PWD}/${AWS_SHARED_CREDENTIALS_FILE}"
-                AWS_CONFIG_FILE="${PWD}/${AWS_CONFIG_FILE}"
+                source /assume-role
+                set +x
                 export BUCKET=`cat bucket_name/bucket_name`
                 aws s3 cp ${ARTEFACT_DIR}/*.jar s3://${BUCKET}/${ARTEFACT_DIR}/encryption-materials-provider-all.jar
                 export VERSION=`echo ${ARTEFACT_DIR}/encryption-materials-provider*.jar | sed "s/^${ARTEFACT_DIR}\/encryption-materials-provider-\(.*\)-all.jar$/\1/"`
@@ -50,4 +48,3 @@ jobs:
                 --bucket ${BUCKET} \
                 --key ${ARTEFACT_DIR}/encryption-materials-provider-all.jar \
                 --tagging $TAG
-
