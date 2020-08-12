@@ -9,6 +9,6 @@ spruce:
     to: aviator_pipeline.yml
 fly:
   name: asset-mgmt-emr-encryption-materials-provider
-  target: concourse
+  target: aws-concourse
   expose: true
   config: aviator_pipeline.yml
