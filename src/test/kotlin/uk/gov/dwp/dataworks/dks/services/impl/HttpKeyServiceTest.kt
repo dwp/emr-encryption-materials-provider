@@ -117,7 +117,7 @@ class HttpKeyServiceTest {
     }
 
     @Test
-    fun testDecryptKey_WithABadKey_WillCallServerOnce_AndRetry() {
+    fun decryptBadKeyWillRetry() {
         val statusLine = mock(StatusLine::class.java)
         val httpClientProvider = mock(HttpClientProvider::class.java)
         given(statusLine.statusCode).willReturn(400)
