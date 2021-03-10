@@ -5,9 +5,10 @@ import org.slf4j.LoggerFactory
 import uk.gov.dwp.dataworks.dks.providers.impl.SecureHttpClientProvider
 import uk.gov.dwp.dataworks.dks.services.KeyService
 import uk.gov.dwp.dataworks.dks.services.impl.HttpKeyService
-import java.io.FileInputStream
-import java.util.*
+import uk.gov.dwp.dataworks.utility.PropertyUtility.properties
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 object DKSClientImpl : DKSClient {
 
     private val IDENTITY_KEYSTORE = "identity.keystore"
@@ -17,12 +18,11 @@ object DKSClientImpl : DKSClient {
     private val TRUST_KEYSTORE = "trust.keystore"
     private val TRUST_STORE_PASSWORD = "trust.store.password"
     private val DATA_KEY_SERVICE_URL = "data.key.service.url"
-    private val DKS_PROPERTIES_PATH = "/opt/emr/dks.properties"
     private val keyService: KeyService
     private val logger: Logger = LoggerFactory.getLogger(DKSClientImpl::class.toString())
 
     init {
-        val dksValues = getDKSProperties()
+        val dksValues = properties()
         val identityStore = validateDKSProperty(dksValues[IDENTITY_KEYSTORE])
         val identityStorePassword = validateDKSProperty(dksValues[IDENTITY_STORE_PWD])
         val identityStoreAlias = validateDKSProperty(dksValues[IDENTITY_STORE_ALIAS])
@@ -38,18 +38,6 @@ object DKSClientImpl : DKSClient {
 
     override fun decryptKey(encryptionKeyId: String, encryptedKey: String): String {
         return keyService.decryptKey(encryptionKeyId, encryptedKey)
-    }
-
-    private fun getDKSProperties(): Map<String, String> {
-        val prop = Properties()
-        try {
-            val inputStream = FileInputStream(DKS_PROPERTIES_PATH)
-            prop.load(inputStream)
-        } catch (e: Exception) {
-            logger.error("Exception when loading DKS properties", e)
-            throw e
-        }
-        return prop.entries.map { it.key as String to it.value as String }.toMap()
     }
 
     private fun validateDKSProperty(property: String?): String {

@@ -19,7 +19,9 @@ import uk.gov.dwp.dataworks.dks.domain.DataKeyResult
 import uk.gov.dwp.dataworks.dks.exceptions.DataKeyDecryptionException
 import uk.gov.dwp.dataworks.dks.providers.HttpClientProvider
 import java.io.ByteArrayInputStream
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 class HttpKeyServiceTest {
 
     @Test
@@ -115,7 +117,7 @@ class HttpKeyServiceTest {
     }
 
     @Test
-    fun testDecryptKey_WithABadKey_WillCallServerOnce_AndNotRetry() {
+    fun decryptBadKeyWillRetry() {
         val statusLine = mock(StatusLine::class.java)
         val httpClientProvider = mock(HttpClientProvider::class.java)
         given(statusLine.statusCode).willReturn(400)
@@ -129,7 +131,7 @@ class HttpKeyServiceTest {
         assertThrows<DataKeyDecryptionException>("Decrypting encryptedKey: 'ENCRYPTED_KEY_ID' with keyEncryptionKeyId: '123' data key service returned status code '400'") {
             keyService.decryptKey("123", "ENCRYPTED_KEY_ID")
         }
-        then(httpClient).should(times(1)).execute(any(HttpPost::class.java))
+        then(httpClient).should(times(5)).execute(any(HttpPost::class.java))
     }
 
 

@@ -7,8 +7,10 @@ import org.mockito.Mockito
 import org.mockito.Mockito.mock
 import uk.gov.dwp.dataworks.dks.domain.DataKeyResult
 import uk.gov.dwp.dataworks.dks.services.KeyService
+import kotlin.time.ExperimentalTime
 
 
+@ExperimentalTime
 class DKSEncryptionMaterialsProviderTest {
 
 

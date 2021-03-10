@@ -13,7 +13,9 @@ import uk.gov.dwp.dataworks.dks.client.DKSClient
 import uk.gov.dwp.dataworks.dks.client.DKSClientImpl
 import uk.gov.dwp.dataworks.dks.services.impl.AESCipherService
 import uk.gov.dwp.dataworks.s3.S3Client
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 object DKSDecryption {
     private val logger: Logger = LoggerFactory.getLogger(DKSDecryption::class.toString())
     private const val IV = "iv"
@@ -33,7 +35,8 @@ object DKSDecryption {
         return decryptedRdd?.map { it.split("\n") }
     }
 
-    fun decryptRdd(summariesRdd: JavaRDD<S3ObjectSummary>, region: String, bucketName: String): JavaRDD<String>? {
+    private fun decryptRdd(summariesRdd: JavaRDD<S3ObjectSummary>, region: String, bucketName: String): JavaRDD<String>? {
+
         val rdd = summariesRdd.map { it.key }.mapPartitions {
             val decryptedStrings = mutableListOf<String>()
             val s3ClientInExecutor = getS3Client(region)
