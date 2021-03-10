@@ -58,7 +58,7 @@ jobs:
 
   publish-github-release:
     runs-on: ubuntu-latest
-    needs: snyk-monitor
+    needs: [build, snyk-monitor]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
