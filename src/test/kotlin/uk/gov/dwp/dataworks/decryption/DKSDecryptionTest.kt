@@ -11,8 +11,10 @@ import io.mockk.spyk
 import io.mockk.verify
 import org.junit.jupiter.api.Test
 import uk.gov.dwp.dataworks.dks.client.DKSClient
+import kotlin.time.ExperimentalTime
 
 
+@ExperimentalTime
 class DKSDecryptionTest {
 
     @Test
