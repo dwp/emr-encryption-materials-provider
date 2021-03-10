@@ -16,27 +16,27 @@ ignore:
         expires: 2021-04-10T00:00:00.000Z
   SNYK-JAVA-ORGAPACHEHADOOP-30630:
     - '*':
-        reason: Transient dependency with no direct upgrade or patch
+        reason: Part of spark-core2.4.4. which is tied to EMR 5.30
         expires: 2021-04-10T00:00:00.000Z
   SNYK-JAVA-ORGAPACHEHADOOP-31400:
     - '*':
-        reason: Transient dependency with no direct upgrade or patch
+        reason: Part of spark-core2.4.4. which is tied to EMR 5.30
         expires: 2021-04-10T00:00:00.000Z
   SNYK-JAVA-ORGAPACHEHADOOP-32124:
     - '*':
-        reason: Transient dependency with no direct upgrade or patch
+        reason: Part of spark-core2.4.4. which is tied to EMR 5.30
         expires: 2021-04-10T00:00:00.000Z
   SNYK-JAVA-ORGAPACHEHADOOP-72665:
     - '*':
-        reason: Transient dependency with no direct upgrade or patch
+        reason: Part of spark-core2.4.4. which is tied to EMR 5.30
         expires: 2021-04-10T00:00:00.000Z
   SNYK-JAVA-ORGAPACHEZOOKEEPER-31428:
     - '*':
-        reason: Transient dependency with no direct upgrade or patch
+        reason: Part of spark-core2.4.4. which is tied to EMR 5.30
         expires: 2021-04-10T00:00:00.000Z
   SNYK-JAVA-ORGAPACHEZOOKEEPER-32301:
     - '*':
-        reason: Transient dependency with no direct upgrade or patch
+        reason: Part of spark-core2.4.4. which is tied to EMR 5.30
         expires: 2021-04-10T00:00:00.000Z
   SNYK-JAVA-ORGGLASSFISHJERSEYMEDIA-595972:
     - '*':
