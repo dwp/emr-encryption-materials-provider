@@ -22,7 +22,9 @@ jobs:
           VERSION=$(echo $LATEST_VERSION | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
           sed -i 's/version=.*/version=$VERSION/' gradle.properties
           echo VERSION: $VERSION
+          cat gradle.properties
           ./gradlew build shadow
+          find build/libs
           echo "::set-output name=publish-version::${VERSION}"
 
 #      - name: notify-slack
