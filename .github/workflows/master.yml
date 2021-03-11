@@ -87,8 +87,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ../encryption-materials-provider-${{ needs.build.outputs.publish-version }}.jar
+          file: ../encryption-materials-provider-*.jar
           tag: ${{ needs.build.outputs.publish-version }}
+          file_glob: true
           overwrite: true
 
       - name: notify-slack
