@@ -25,15 +25,15 @@ jobs:
           ./gradlew build shadow
           echo "::set-output name=publish-version::${VERSION}"
 
-      - name: notify-slack
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ job.status }}
-          fields: repo,commit,author,workflow
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-        if: ${{ failure() }}
+#      - name: notify-slack
+#        uses: 8398a7/action-slack@v3
+#        with:
+#          status: ${{ job.status }}
+#          fields: repo,commit,author,workflow
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+#        if: ${{ failure() }}
 
       - name: upload-jar-artifact
         if: ${{ success() }}
@@ -42,18 +42,18 @@ jobs:
           name: artifacts
           path: build/libs/*.jar
 
-  snyk-monitor:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: snyk-monitoring
-        uses: snyk/actions/gradle@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high --policy-path=./.snyk --org=dwp-dataworks
+#  snyk-monitor:
+#    runs-on: ubuntu-latest
+#    needs: build
+#    steps:
+#      - uses: actions/checkout@v2
+#
+#      - name: snyk-monitoring
+#        uses: snyk/actions/gradle@master
+#        env:
+#          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+#        with:
+#          args: --severity-threshold=high --policy-path=./.snyk --org=dwp-dataworks
 
   publish-github-release:
     runs-on: ubuntu-latest
@@ -79,24 +79,24 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: svenstaro/upload-release-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ../encryption-materials-provider-*.jar
-          tag: ${{ github.ref }}
-          overwrite: true
-          file_glob: true
+#      - name: Upload Release Asset
+#        id: upload-release-asset
+#        uses: svenstaro/upload-release-action@v2
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          repo_token: ${{ secrets.GITHUB_TOKEN }}
+#          file: ../encryption-materials-provider-*.jar
+#          tag: ${{ github.ref }}
+#          overwrite: true
+#          file_glob: true
 
-      - name: notify-slack
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ job.status }}
-          fields: repo,commit,author,workflow
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-        if: ${{ failure() }}
+#      - name: notify-slack
+#        uses: 8398a7/action-slack@v3
+#        with:
+#          status: ${{ job.status }}
+#          fields: repo,commit,author,workflow
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+#        if: ${{ failure() }}
