@@ -20,7 +20,7 @@ jobs:
           LATEST_VERSION=$(curl --silent "https://api.github.com/repos/${{ github.repository }}/releases/latest" | grep '"tag_name":' | sed -E -e 's/.*": "([^"]+)".*/\1/' || true)
           [ -z "$LATEST_VERSION" ] && LATEST_VERSION="0.0.0"
           VERSION=$(echo $LATEST_VERSION | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
-          sed -i 's/version=.*/version=$VERSION/' gradle.properties
+          sed -i "s/version=.*/version=$VERSION/" gradle.properties
           echo VERSION: $VERSION
           cat gradle.properties
           ./gradlew build shadow
