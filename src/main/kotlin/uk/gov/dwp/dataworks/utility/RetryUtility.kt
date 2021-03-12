@@ -9,7 +9,6 @@ object RetryUtility {
     fun <T> retry(f: () -> T): T {
 
         fun go(attempts: Int): T {
-            println("ATTEMPT: $attempts, INITIAL BACKOFF: $initialBackoff, MAX ATTEMPTS: $maxAttempts, MULTIPLIER: $backoffMultiplier")
             return try {
                 f()
             } catch (e: Exception) {
@@ -46,11 +45,8 @@ object RetryUtility {
         retryProperty(RETRY_MAX_ATTEMPTS, "5").toInt()
     }
 
-    private fun retryProperty(name: String, default: String): String {
-        val x = (properties[name] ?: System.getProperty(name, default))
-        println("name: $name, default: $default, x: $x, property: ${System.getProperty(name)}")
-        return x
-    }
+    private fun retryProperty(name: String, default: String): String =
+        (properties[name] ?: System.getProperty(name, default))
 
     private val properties: Map<String, String> by lazy {
         try {

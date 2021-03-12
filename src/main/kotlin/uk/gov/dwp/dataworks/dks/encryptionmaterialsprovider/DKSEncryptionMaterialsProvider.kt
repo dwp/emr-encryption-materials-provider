@@ -75,7 +75,7 @@ class DKSEncryptionMaterialsProvider: EncryptionMaterialsProvider, Configurable 
         logger.debug("Received materials description $materialsDescriptionStr")
         val keyId = materialsDescription[METADATA_KEYID]
         val encryptedKey = materialsDescription[METADATA_ENCRYPTED_KEY]
-        logger.info("Received keyId: '$keyId' and encryptedKey: '$encryptedKey' from materials description")
+        logger.info("Received keyId: '$keyId', encryptedKey: '$encryptedKey' from materials description")
         return if (null == keyId && null == encryptedKey) {
             getMaterialForEncryption()
         } else {
@@ -91,7 +91,7 @@ class DKSEncryptionMaterialsProvider: EncryptionMaterialsProvider, Configurable 
         logger.debug("DKS generated key successfully!")
         val keyId = dataKeyResult.dataKeyEncryptionKeyId
         val cipherKey = dataKeyResult.ciphertextDataKey
-        logger.info("Adding key id '$keyId' and cipher key '$cipherKey' to the S3 metadata")
+        logger.info("Adding key id '$keyId' and cipher key '$cipherKey' to the S3 object metadata")
         return EncryptionMaterials(secretKeySpec)
             .addDescription(METADATA_KEYID, keyId)
             .addDescription(METADATA_ENCRYPTED_KEY, cipherKey)
