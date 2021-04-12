@@ -1,6 +1,7 @@
 package uk.gov.dwp.dataworks.utility
 import org.slf4j.LoggerFactory
 import uk.gov.dwp.dataworks.utility.PropertyUtility.properties
+import uk.gov.dwp.dataworks.utility.PropertyUtility.property
 import kotlin.time.ExperimentalTime
 
 @ExperimentalTime
@@ -34,27 +35,17 @@ object RetryUtility {
 
 
     private val initialBackoff: Long by lazy {
-        retryProperty(RETRY_INITIAL_BACKOFF, "10000").toLong()
+        property(RETRY_INITIAL_BACKOFF, "10000").toLong()
     }
 
     private val backoffMultiplier: Long by lazy {
-        retryProperty(RETRY_BACKOFF_MULTIPLIER, "2").toLong()
+        property(RETRY_BACKOFF_MULTIPLIER, "2").toLong()
     }
 
     private val maxAttempts: Int by lazy {
-        retryProperty(RETRY_MAX_ATTEMPTS, "5").toInt()
+        property(RETRY_MAX_ATTEMPTS, "5").toInt()
     }
 
-    private fun retryProperty(name: String, default: String): String =
-        (properties[name] ?: System.getProperty(name, default))
-
-    private val properties: Map<String, String> by lazy {
-        try {
-            properties()
-        } catch (e: Exception) {
-            mapOf()
-        }
-    }
 
     private fun logFailedAttempt(attempts: Int, e: Exception) {
         logger.warn("Retryable function failed", "attempt_number" to "$attempts",

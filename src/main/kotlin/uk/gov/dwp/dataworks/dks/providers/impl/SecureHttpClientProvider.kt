@@ -6,6 +6,7 @@ import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.ssl.SSLContexts
 import uk.gov.dwp.dataworks.dks.providers.HttpClientProvider
+import uk.gov.dwp.dataworks.utility.PropertyUtility.property
 import java.io.File
 import javax.net.ssl.SSLContext
 
@@ -23,8 +24,9 @@ open class SecureHttpClientProvider(val identityStore: String, val identityStore
 
     private fun requestConfig(): RequestConfig =
         RequestConfig.custom().run {
-            setConnectTimeout(5_000)
-            setConnectionRequestTimeout(5_000)
+            setSocketTimeout(property(SOCKET_TIMEOUT_PROPERTY_NAME, "300000").toInt())
+            setConnectTimeout(property(CONNECT_TIMEOUT_PROPERTY_NAME, "300000").toInt())
+            setConnectionRequestTimeout(property(CONNECTION_REQUEST_TIMEOUT_PROPERTY_NAME, "300000").toInt())
             build()
         }
 
@@ -45,4 +47,9 @@ open class SecureHttpClientProvider(val identityStore: String, val identityStore
             build()
         }
 
+    companion object {
+        private const val SOCKET_TIMEOUT_PROPERTY_NAME = "socket.timeout"
+        private const val CONNECT_TIMEOUT_PROPERTY_NAME = "connect.timeout"
+        private const val CONNECTION_REQUEST_TIMEOUT_PROPERTY_NAME = "connection.request.timeout"
+    }
 }
