@@ -5,48 +5,48 @@ ignore:
   SNYK-JAVA-COMFASTERXMLJACKSONDATAFORMAT-1047329:
     - '*':
         reason: Transient dependency with no direct upgrade or patch
-        expires: 2021-04-10T00:00:00.000Z
+        expires: 2021-05-10T00:00:00.000Z
   SNYK-JAVA-COMGOOGLEPROTOBUF-173761:
     - '*':
         reason: Transient dependency with no direct upgrade or patch
-        expires: 2021-04-10T00:00:00.000Z
+        expires: 2021-05-10T00:00:00.000Z
   SNYK-JAVA-LOG4J-572732:
     - '*':
         reason: Transient dependency with no direct upgrade or patch
-        expires: 2021-04-10T00:00:00.000Z
+        expires: 2021-05-10T00:00:00.000Z
   SNYK-JAVA-ORGAPACHEHADOOP-30630:
     - '*':
         reason: Part of spark-core2.4.4. which is tied to EMR 5.30
-        expires: 2021-04-10T00:00:00.000Z
+        expires: 2021-05-10T00:00:00.000Z
   SNYK-JAVA-ORGAPACHEHADOOP-31400:
     - '*':
         reason: Part of spark-core2.4.4. which is tied to EMR 5.30
-        expires: 2021-04-10T00:00:00.000Z
+        expires: 2021-05-10T00:00:00.000Z
   SNYK-JAVA-ORGAPACHEHADOOP-32124:
     - '*':
         reason: Part of spark-core2.4.4. which is tied to EMR 5.30
-        expires: 2021-04-10T00:00:00.000Z
+        expires: 2021-05-10T00:00:00.000Z
   SNYK-JAVA-ORGAPACHEHADOOP-72665:
     - '*':
         reason: Part of spark-core2.4.4. which is tied to EMR 5.30
-        expires: 2021-04-10T00:00:00.000Z
+        expires: 2021-05-10T00:00:00.000Z
   SNYK-JAVA-ORGAPACHEZOOKEEPER-31428:
     - '*':
         reason: Part of spark-core2.4.4. which is tied to EMR 5.30
-        expires: 2021-04-10T00:00:00.000Z
+        expires: 2021-05-10T00:00:00.000Z
   SNYK-JAVA-ORGAPACHEZOOKEEPER-32301:
     - '*':
         reason: Part of spark-core2.4.4. which is tied to EMR 5.30
-        expires: 2021-04-10T00:00:00.000Z
+        expires: 2021-05-10T00:00:00.000Z
   SNYK-JAVA-ORGGLASSFISHJERSEYMEDIA-595972:
     - '*':
         reason: Transient dependency with no direct upgrade or patch
-        expires: 2021-04-10T00:00:00.000Z
+        expires: 2021-05-10T00:00:00.000Z
   SNYK-JAVA-ORGMORTBAYJETTY-1021919:
     - '*':
         reason: Transient dependency with no direct upgrade or patch
-        expires: 2021-04-10T00:00:00.000Z
+        expires: 2021-05-10T00:00:00.000Z
   SNYK-JAVA-XERCES-31585:
     - '*':
         reason: Transient dependency with no direct upgrade or patch
-        expires: 2021-04-10T00:00:00.000Z
+        expires: 2021-05-10T00:00:00.000Z
