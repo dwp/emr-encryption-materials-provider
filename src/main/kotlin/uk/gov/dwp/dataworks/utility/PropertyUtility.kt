@@ -6,6 +6,17 @@ import java.util.*
 
 object PropertyUtility {
 
+    fun property(name: String, default: String): String =
+        (properties[name] ?: System.getProperty(name, default))
+
+    private val properties: Map<String, String> by lazy {
+        try {
+            properties()
+        } catch (e: Exception) {
+            mapOf()
+        }
+    }
+
     fun properties(): Map<String, String> =
         try {
             with(Properties()) {
