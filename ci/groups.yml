@@ -1,4 +1,7 @@
 groups:
+  - name: master
+    jobs:
+      - mirror-emr-encryption-materials-provider
   - name: update-pipeline
     jobs:
       - update-pipeline
