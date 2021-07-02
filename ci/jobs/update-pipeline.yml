@@ -25,5 +25,5 @@ jobs:
             - name: emr-encryption-materials-provider
           outputs:
             - name: pipeline
-      - set_pipeline: emr-encryption-materials-provider
+      - set_pipeline: asset-mgmt-emr-encryption-materials-provider
         file: pipeline/aviator_pipeline.yml
