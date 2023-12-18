@@ -1,3 +1,5 @@
+# DO NOT USE THIS REPO - MIGRATED TO GITLAB
+
 # Spike - Decryption in spark vs transparent EMRFS decryption (DW-3239 vs DW-3234)   for the ingested data by HTME
 EMRFS transparent Encryption:
 1. EMRFS generates data key , encrypts the data with the generated data key 
