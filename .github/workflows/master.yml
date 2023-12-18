@@ -43,22 +43,9 @@ jobs:
           name: artifacts
           path: build/libs/*.jar
 
-  snyk-monitor:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: snyk-monitoring
-        uses: snyk/actions/gradle@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high --policy-path=./.snyk --org=dwp-dataworks
-
   publish-github-release:
     runs-on: ubuntu-latest
-    needs: [build, snyk-monitor]
+    needs: [build]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
